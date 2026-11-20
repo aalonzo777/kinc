@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}KINC{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --kinc-primary: #1565C0;
+      --kinc-primary-dark: #0D47A1;
+      --kinc-primary-light: #1976D2;
+      --kinc-accent: #00ACC1;
+      --kinc-success: #2E7D32;
+      --kinc-warning: #F57F17;
+      --kinc-danger: #C62828;
+      --kinc-sidebar-bg: #0D47A1;
+      --kinc-sidebar-text: #E3F2FD;
+      --kinc-sidebar-hover: #1565C0;
+      --kinc-topbar-bg: #1565C0;
+    }
+    body { background: #F0F4F8; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    /* SIDEBAR */
+    .kinc-sidebar {
+      width: 260px; min-height: 100vh; background: var(--kinc-sidebar-bg);
+      position: fixed; top: 0; left: 0; z-index: 1000;
+      display: flex; flex-direction: column;
+      box-shadow: 3px 0 15px rgba(0,0,0,.2);
+    }
+    .kinc-sidebar .brand {
+      padding: 1.5rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,.15);
+    }
+    .kinc-sidebar .brand h4 {
+      color: #fff; font-weight: 800; letter-spacing: 2px; margin: 0;
+    }
+    .kinc-sidebar .brand small { color: var(--kinc-sidebar-text); opacity:.7; font-size:.75rem; }
+    .kinc-sidebar .nav-link, .kinc-offcanvas .nav-link {
+      color: var(--kinc-sidebar-text); padding: .65rem 1.25rem;
+      border-radius: 8px; margin: 2px 10px; font-size:.9rem;
+      display: flex; align-items: center; gap: .65rem;
+      transition: background .2s;
+    }
+    .kinc-sidebar .nav-link:hover, .kinc-sidebar .nav-link.active, .kinc-offcanvas .nav-link:hover, .kinc-offcanvas .nav-link.active {
+      background: var(--kinc-sidebar-hover); color: #fff;
+    }
+    .kinc-sidebar .nav-link i, .kinc-offcanvas .nav-link i { font-size: 1.1rem; width: 20px; text-align:center; }
+    .kinc-sidebar-footer {
+      margin-top: auto; padding: 1rem;
+      border-top: 1px solid rgba(255,255,255,.15);
+    }
+
+    /* TOPBAR */
+    .kinc-topbar {
+      background: var(--kinc-topbar-bg); color: #fff;
+      padding: .75rem 1.5rem; display: flex; align-items: center;
+      justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+      position: sticky; top:0; z-index: 900;
+    }
+    .kinc-topbar .page-title { font-size:1.1rem; font-weight:600; margin:0; }
+
+    /* LAYOUT */
+    .kinc-layout { margin-left: 260px; }
+    .kinc-content { padding: 1.75rem; min-height: calc(100vh - 60px); }
+
+    /* CARDS */
+    .stat-card {
+      border: none; border-radius: 14px;
+      background: #fff; box-shadow: 0 2px 12px rgba(21,101,192,.1);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(21,101,192,.18); }
+    .stat-icon {
+      width: 52px; height: 52px; border-radius: 12px;
+      display: flex; align-items:center; justify-content:center;
+      font-size: 1.4rem;
+    }
+    .bg-primary-soft { background: #E3F2FD; color: var(--kinc-primary); }
+    .bg-success-soft { background: #E8F5E9; color: var(--kinc-success); }
+    .bg-warning-soft { background: #FFF8E1; color: var(--kinc-warning); }
+    .bg-accent-soft  { background: #E0F7FA; color: var(--kinc-accent); }
+
+    /* TABLE */
+    .kinc-table { background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(21,101,192,.08); }
+    .kinc-table .table { margin:0; }
+    .kinc-table .table thead th { background: var(--kinc-primary); color:#fff; border:none; font-weight:600; font-size:.85rem; text-transform:uppercase; letter-spacing:.5px; }
+    .kinc-table .table tbody tr:hover { background: #F5F9FF; }
+
+    /* BADGES */
+    .badge-pendiente   { background:#E3F2FD; color:#1565C0; }
+    .badge-aceptado    { background:#E8F5E9; color:#2E7D32; }
+    .badge-completado  { background:#FFF8E1; color:#F57F17; }
+    .badge-verificado  { background:#E8F5E9; color:#1B5E20; }
+    .badge-en_progreso { background:#E0F7FA; color:#006064; }
+
+    /* BUTTONS */
+    .btn-kinc { background: var(--kinc-primary); color:#fff; border:none; }
+    .btn-kinc:hover { background: var(--kinc-primary-dark); color:#fff; }
+
+    /* FORMS */
+    .kinc-form-card { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(21,101,192,.08); padding:2rem; }
+    .form-label { font-weight:600; color:#374151; font-size:.875rem; }
+    .form-control:focus, .form-select:focus { border-color: var(--kinc-primary); box-shadow: 0 0 0 .2rem rgba(21,101,192,.15); }
+
+    /* AVATAR */
+    .avatar-circle {
+      width:42px; height:42px; border-radius:50%;
+      background: var(--kinc-primary); color:#fff;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:1rem;
+    }
+
+    /* NOTIFICATIONS */
+    .notif-dot { width:8px; height:8px; background:#EF5350; border-radius:50%; display:inline-block; }
+
+    /* PATIENT CARD */
+    .patient-card {
+      background:#fff; border-radius:14px; padding:1.25rem;
+      box-shadow:0 2px 10px rgba(21,101,192,.08);
+      border-left: 4px solid var(--kinc-primary);
+      transition: box-shadow .2s;
+    }
+    .patient-card:hover { box-shadow:0 6px 20px rgba(21,101,192,.15); }
+
+    /* CHALLENGE CARD */
+    .challenge-card {
+      background:#fff; border-radius:12px; padding:1.1rem;
+      box-shadow:0 2px 8px rgba(0,0,0,.07);
+      border-left: 4px solid var(--kinc-accent);
+    }
+
+    /* POINT BADGE */
+    .points-badge {
+      background: linear-gradient(135deg, #FFD700, #FFA000);
+      color: #fff; border-radius: 20px; padding: .3rem .8rem;
+      font-weight: 700; display: inline-flex; align-items: center; gap:.3rem;
+    }
+
+    @media (max-width: 767.98px) {
+      .kinc-sidebar { display:none; }
+      .kinc-layout { margin-left: 0; }
+    }
+
+    /* puntito rojo de novedades */
+    .nav-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 20px; }
+    .nav-dot {
+      position: absolute; top: -4px; right: -6px; width: 11px; height: 11px;
+      background: #FF3B30; border: 2px solid var(--kinc-sidebar-bg); border-radius: 50%;
+    }
+    .btn-topbar .nav-dot { top: 7px; right: 7px; border-color: var(--kinc-topbar-bg); }
+
+    /* botones de la barra superior (volver / menú): tamaño cómodo para tocar */
+    .btn-topbar {
+      position: relative; flex-shrink: 0; width: 44px; height: 44px; border: 0; border-radius: 12px;
+      background: rgba(255,255,255,.15); color: #fff; font-size: 1.4rem;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .btn-topbar:hover, .btn-topbar:focus { background: rgba(255,255,255,.3); color: #fff; }
+    .kinc-topbar .page-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kinc-offcanvas .nav-link { border: 0; }
+
+    @media (max-width: 767.98px) {
+      .kinc-content { padding: 1rem; }
+      .kinc-table { overflow-x: auto; }
+      .kinc-form-card { padding: 1.25rem; }
+      .kinc-topbar { padding: .6rem .8rem; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<div class="kinc-sidebar">
+  <div class="brand">
+    <h4><i class="bi bi-activity me-2"></i>KINC</h4>
+    <small>{{ user.get_full_name|default:user.username }}</small>
+  </div>
+
+  <nav class="py-2 flex-grow-1">
+    {% include 'core/_nav.html' %}
+  </nav>
+
+  <div class="kinc-sidebar-footer">
+    {% include 'core/_nav_footer.html' %}
+  </div>
+</div>
+
+<!-- Menú para celular (mismo contenido que la barra lateral) -->
+<div class="offcanvas offcanvas-start kinc-offcanvas" tabindex="-1" id="kincMenu"
+     aria-labelledby="kincMenuLabel" style="width:290px;background:var(--kinc-sidebar-bg);">
+  <div class="offcanvas-header" style="border-bottom:1px solid rgba(255,255,255,.15);">
+    <h5 class="offcanvas-title text-white fw-bold" id="kincMenuLabel"><i class="bi bi-activity me-2"></i>KINC</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar menú"></button>
+  </div>
+  <div class="offcanvas-body d-flex flex-column p-0">
+    <nav class="py-2 flex-grow-1">
+      {% include 'core/_nav.html' %}
+    </nav>
+    <div class="kinc-sidebar-footer">
+      {% include 'core/_nav_footer.html' %}
+    </div>
+  </div>
+</div>
+
+<div class="kinc-layout">
+  <div class="kinc-topbar">
+    <div class="d-flex align-items-center gap-2" style="min-width:0;">
+      <button type="button" class="btn-topbar d-md-none" data-bs-toggle="offcanvas" data-bs-target="#kincMenu"
+              aria-controls="kincMenu" aria-label="Abrir menú">
+        <i class="bi bi-list"></i>{% if nav_badges.any %}<span class="nav-dot" aria-hidden="true"></span>{% endif %}
+      </button>
+      {% with page=request.resolver_match.url_name %}
+      {% if page != 'kin_dashboard' and page != 'patient_dashboard' %}
+      <button type="button" class="btn-topbar" id="kincBack" data-fallback="{% url 'dashboard' %}"
+              aria-label="Volver atrás" title="Volver atrás"><i class="bi bi-arrow-left"></i></button>
+      {% endif %}
+      {% endwith %}
+      <span class="page-title">{% block page_title %}{% endblock %}</span>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <span class="badge" style="background:rgba(255,255,255,.2);padding:.4rem .8rem;border-radius:20px;">
+        <i class="bi bi-person-circle me-1"></i>{{ user.get_role_display }}
+      </span>
+    </div>
+  </div>
+
+  <div class="kinc-content">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 mb-3" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+{% else %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Botón "volver atrás": vuelve a la página anterior de KINC; si no hay, va al panel
+  (function () {
+    var btn = document.getElementById('kincBack');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var ref = document.referrer || '';
+      if (ref.indexOf(window.location.origin) === 0 && window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = btn.getAttribute('data-fallback');
+      }
+    });
+  })();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

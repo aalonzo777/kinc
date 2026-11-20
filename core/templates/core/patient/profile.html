@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+{% block title %}Mi perfil – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-person-circle me-2"></i>Mi perfil{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="kinc-form-card text-center">
+      <div class="avatar-circle mx-auto mb-3" style="width:80px;height:80px;font-size:2rem;">
+        {{ request.user.first_name.0|upper }}{{ request.user.last_name.0|upper }}
+      </div>
+      <h4 class="fw-800 mb-1">{{ request.user.get_full_name }}</h4>
+      <div class="text-muted mb-3">{{ request.user.email }}</div>
+      <div class="points-badge justify-content-center mb-4">
+        <i class="bi bi-star-fill"></i>{{ profile.points }} puntos acumulados
+      </div>
+
+      <div class="text-start">
+        <div class="row g-3">
+          {% if request.user.phone %}
+          <div class="col-6">
+            <div class="p-3 rounded-3" style="background:#F0F4F8;">
+              <div class="text-muted small fw-600 mb-1"><i class="bi bi-telephone me-1"></i>Teléfono</div>
+              <div class="fw-600">{{ request.user.phone }}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% if request.user.age %}
+          <div class="col-6">
+            <div class="p-3 rounded-3" style="background:#F0F4F8;">
+              <div class="text-muted small fw-600 mb-1"><i class="bi bi-calendar me-1"></i>Edad</div>
+              <div class="fw-600">{{ request.user.age }} años</div>
+            </div>
+          </div>
+          {% endif %}
+          {% if profile.kinesiologo %}
+          <div class="col-12">
+            <div class="p-3 rounded-3" style="background:#E3F2FD;">
+              <div class="text-muted small fw-600 mb-1"><i class="bi bi-person-badge me-1"></i>Mi kinesiólogo</div>
+              <div class="fw-600">{{ profile.kinesiologo.get_full_name }}</div>
+              <div class="text-muted small">{{ profile.kinesiologo.email }}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% if profile.last_session %}
+          <div class="col-12">
+            <div class="p-3 rounded-3" style="background:#F0F4F8;">
+              <div class="text-muted small fw-600 mb-1"><i class="bi bi-clock me-1"></i>Última sesión</div>
+              <div class="fw-600">{{ profile.last_session|date:"d/m/Y H:i" }}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% if profile.notes %}
+          <div class="col-12">
+            <div class="p-3 rounded-3" style="background:#F0F4F8;">
+              <div class="text-muted small fw-600 mb-2"><i class="bi bi-journal-text me-1"></i>Notas de mi kinesiólogo</div>
+              <div style="font-size:.9rem;">{{ profile.notes }}</div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- RESUMEN -->
+        <div class="row g-3 mt-2">
+          <div class="col-4 text-center">
+            <div class="p-3 rounded-3" style="background:#E3F2FD;">
+              <div class="fw-800 fs-3 text-primary">{{ profile.challenges.count }}</div>
+              <div class="text-muted small">Desafíos</div>
+            </div>
+          </div>
+          <div class="col-4 text-center">
+            <div class="p-3 rounded-3" style="background:#E8F5E9;">
+              <div class="fw-800 fs-3 text-success">{{ profile.challenges.filter.count|default:"–" }}</div>
+              <div class="text-muted small">Completados</div>
+            </div>
+          </div>
+          <div class="col-4 text-center">
+            <div class="p-3 rounded-3" style="background:#FFF8E1;">
+              <div class="fw-800 fs-3 text-warning">{{ profile.reward_claims.count }}</div>
+              <div class="text-muted small">Reclamos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+<a href="{% url 'change_password' %}" class="nav-link">
+  <span class="nav-icon"><i class="bi bi-key-fill"></i></span> Cambiar contraseña
+</a>
+<form method="post" action="{% url 'logout' %}" class="m-0">
+  {% csrf_token %}
+  <button type="submit" class="nav-link text-danger w-100 border-0 bg-transparent text-start">
+    <span class="nav-icon"><i class="bi bi-box-arrow-left"></i></span> Cerrar sesión
+  </button>
+</form>

@@ -1,0 +1,115 @@
+{% extends 'core/base.html' %}
+{% block title %}Chat – KINC{% endblock %}
+{% block page_title %}
+  <i class="bi bi-chat-dots-fill me-2"></i>
+  {% if is_kin %}Chat con {{ patient.user.get_full_name }}
+  {% else %}Chat con tu kinesiólogo{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chat-container {
+    height: 420px; overflow-y: auto;
+    background: #F0F4F8; border-radius: 14px;
+    padding: 1rem; display: flex; flex-direction: column; gap: .6rem;
+    scroll-behavior: smooth;
+  }
+  .msg-bubble {
+    max-width: 72%; padding: .65rem 1rem;
+    border-radius: 18px; font-size: .9rem; line-height: 1.4;
+  }
+  .msg-mine {
+    background: #1565C0; color: #fff;
+    align-self: flex-end; border-bottom-right-radius: 4px;
+  }
+  .msg-other {
+    background: #fff; color: #1F2937;
+    align-self: flex-start; border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .msg-time { font-size: .7rem; opacity: .65; margin-top: .2rem; }
+  .msg-sender { font-size: .72rem; font-weight: 700; margin-bottom: .15rem; opacity: .8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <!-- INFO HEADER -->
+    <div class="kinc-form-card mb-3 d-flex align-items-center gap-3 py-3">
+      <div class="avatar-circle" style="width:44px;height:44px;">
+        {% if is_kin %}
+          {{ patient.user.first_name.0|upper }}{{ patient.user.last_name.0|upper }}
+        {% else %}
+          {{ kin.first_name.0|upper }}{{ kin.last_name.0|upper }}
+        {% endif %}
+      </div>
+      <div>
+        {% if is_kin %}
+          <div class="fw-700">{{ patient.user.get_full_name }}</div>
+          <div class="text-muted small">Paciente · {{ patient.user.email }}</div>
+        {% else %}
+          <div class="fw-700">{{ kin.get_full_name }}</div>
+          <div class="text-muted small">Tu kinesiólogo · {{ kin.email }}</div>
+        {% endif %}
+      </div>
+      {% if is_kin %}
+      <div class="ms-auto">
+        <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-sm btn-outline-primary rounded-pill">
+          <i class="bi bi-person me-1"></i>Ver ficha
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- MENSAJES -->
+    <div class="kinc-form-card mb-3 p-0 overflow-hidden">
+      <div class="chat-container" id="chatBox">
+        {% for m in msgs %}
+          {% if m.sender == request.user %}
+          <div style="display:flex;flex-direction:column;align-items:flex-end;">
+            <div class="msg-bubble msg-mine">{{ m.body }}</div>
+            <div class="msg-time text-end me-1">{{ m.created_at|date:"d/m H:i" }}</div>
+          </div>
+          {% else %}
+          <div style="display:flex;flex-direction:column;align-items:flex-start;">
+            <div class="msg-sender ms-1">{{ m.sender.get_full_name }}</div>
+            <div class="msg-bubble msg-other">{{ m.body }}</div>
+            <div class="msg-time ms-1">{{ m.created_at|date:"d/m H:i" }}</div>
+          </div>
+          {% endif %}
+        {% empty %}
+        <div class="text-center text-muted my-auto py-5">
+          <i class="bi bi-chat-square-dots" style="font-size:2.5rem;color:#CBD5E0;"></i>
+          <p class="mt-2 small">No hay mensajes aún. ¡Inicia la conversación!</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- INPUT -->
+    <form method="post" class="kinc-form-card">
+      {% csrf_token %}
+      <div class="d-flex gap-2">
+        <input type="text" name="body" maxlength="1000" class="form-control rounded-pill"
+               placeholder="Escribe un mensaje..." required autocomplete="off"
+               id="msgInput">
+        <button type="submit" class="btn btn-kinc rounded-pill px-4">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Scroll al fondo automáticamente
+  const chatBox = document.getElementById('chatBox');
+  chatBox.scrollTop = chatBox.scrollHeight;
+  document.getElementById('msgInput').focus();
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'core/base.html' %}
+{% block title %}Agregar paciente – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-person-plus-fill me-2"></i>Agregar paciente{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="kinc-form-card">
+      <h5 class="fw-700 mb-4" style="color:#1565C0;"><i class="bi bi-person-plus me-2"></i>Datos del nuevo paciente</h5>
+      <form method="post">
+        {% csrf_token %}
+        {% include 'core/_form_errors.html' %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Nombre *</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Apellido *</label>
+            {{ form.last_name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Correo electrónico *</label>
+            {{ form.email }}
+            {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Teléfono</label>
+            {{ form.phone }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Edad</label>
+            {{ form.age }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Contraseña para el paciente *</label>
+            {{ form.password }}
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-kinc rounded-pill px-4">
+            <i class="bi bi-check-lg me-2"></i>Guardar paciente
+          </button>
+          <a href="{% url 'patient_list' %}" class="btn btn-outline-secondary rounded-pill px-4">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

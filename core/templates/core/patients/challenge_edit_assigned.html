@@ -1,0 +1,39 @@
+{% extends 'core/base.html' %}
+{% block title %}Cambiar desafío – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-pencil me-2"></i>Cambiar desafío asignado{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-6">
+  <div class="kinc-form-card">
+    <div class="p-3 rounded-3 mb-4" style="background:#E3F2FD;">
+      <div class="text-muted small fw-600 mb-1">Paciente</div>
+      <div class="fw-700">{{ pc.patient.user.get_full_name }}</div>
+      <div class="text-muted small fw-600 mt-2 mb-1">Desafío actual</div>
+      <div class="fw-600 text-primary">{{ pc.challenge.name }}</div>
+      <span class="badge rounded-pill badge-{{ pc.status }} mt-1">{{ pc.get_status_display }}</span>
+    </div>
+    <h6 class="fw-700 mb-3" style="color:#1565C0;">Selecciona el nuevo desafío:</h6>
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <select name="challenge_id" class="form-select">
+          {% for ch in available %}
+          <option value="{{ ch.pk }}">{{ ch.name }} — {{ ch.get_challenge_type_display }} · {{ ch.points }} pts</option>
+          {% empty %}
+          <option disabled>No hay otros desafíos disponibles</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="alert alert-warning small rounded-3">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Al cambiar el desafío se reiniciará el progreso y el estado quedará como "Pendiente".
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-kinc rounded-pill px-4">
+          <i class="bi bi-check-lg me-2"></i>Cambiar desafío
+        </button>
+        <a href="{% url 'patient_detail' pc.patient.pk %}" class="btn btn-outline-secondary rounded-pill px-4">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div></div>
+{% endblock %}

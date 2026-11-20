@@ -1,0 +1,83 @@
+{% extends 'core/base.html' %}
+{% block title %}Recompensas – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-gift-fill me-2"></i>Recompensas{% endblock %}
+
+{% block content %}
+<!-- MIS PUNTOS -->
+<div class="stat-card card mb-4" style="background:linear-gradient(135deg,#F57F17,#FFA000);border:none;">
+  <div class="card-body py-3 d-flex align-items-center gap-3">
+    <i class="bi bi-star-fill text-white" style="font-size:2rem;"></i>
+    <div>
+      <div style="color:rgba(255,255,255,.8);font-size:.85rem;">Mis puntos disponibles</div>
+      <div style="color:#fff;font-size:2rem;font-weight:800;">{{ profile.points }} pts</div>
+    </div>
+  </div>
+</div>
+
+<!-- RECOMPENSAS DISPONIBLES -->
+<h5 class="fw-700 mb-3"><i class="bi bi-shop me-2 text-primary"></i>Recompensas disponibles</h5>
+<div class="row g-3 mb-5">
+  {% for r in rewards %}
+  <div class="col-md-6 col-xl-4">
+    <div class="stat-card card h-100">
+      <div class="card-body">
+        <div class="fw-700 fs-6 mb-1">{{ r.name }}</div>
+        <div class="text-muted small mb-3">{{ r.description }}</div>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <span class="points-badge"><i class="bi bi-star-fill"></i>{{ r.points_cost }} pts</span>
+          <span class="text-muted small">Stock: <strong>{{ r.stock }}</strong></span>
+        </div>
+        {% if r.has_stock and profile.points >= r.points_cost %}
+        <form method="post" action="{% url 'claim_reward' r.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-kinc rounded-pill w-100">
+            <i class="bi bi-gift me-1"></i>Reclamar
+          </button>
+        </form>
+        {% elif not r.has_stock %}
+        <button class="btn btn-secondary rounded-pill w-100" disabled>Sin stock</button>
+        {% else %}
+        <button class="btn btn-outline-secondary rounded-pill w-100" disabled>
+          <i class="bi bi-lock me-1"></i>Necesitas {{ r.points_cost|add:"-0" }} pts
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-4 text-muted">No hay recompensas disponibles.</div>
+  {% endfor %}
+</div>
+
+<!-- MIS RECLAMOS -->
+<h5 class="fw-700 mb-3"><i class="bi bi-clock-history me-2 text-primary"></i>Mis reclamos</h5>
+<div class="kinc-table">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Recompensa</th>
+        <th>Fecha</th>
+        <th class="text-center">Puntos</th>
+        <th class="text-center">Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for claim in my_claims %}
+      <tr>
+        <td class="fw-600">{{ claim.reward.name }}</td>
+        <td class="text-muted small">{{ claim.claimed_at|date:"d/m/Y H:i" }}</td>
+        <td class="text-center"><span class="points-badge"><i class="bi bi-star-fill"></i>{{ claim.points_spent }}</span></td>
+        <td class="text-center">
+          <span class="badge rounded-pill
+            {% if claim.status == 'aprobado' %}bg-success{% elif claim.status == 'rechazado' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+            {{ claim.get_status_display }}
+          </span>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center py-4 text-muted">No has reclamado recompensas aún.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

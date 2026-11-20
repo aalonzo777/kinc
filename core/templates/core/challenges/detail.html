@@ -1,0 +1,122 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ challenge.name }} – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-trophy-fill me-2"></i>Detalle del desafío{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- INFO DEL DESAFÍO -->
+  <div class="col-lg-5">
+    <div class="kinc-form-card mb-3">
+      <div class="d-flex align-items-start justify-content-between gap-2">
+        <h5 class="fw-800 mb-1" style="color:#1565C0;">{{ challenge.name }}</h5>
+        {% if challenge.is_active %}<span class="badge bg-success rounded-pill">Activo</span>
+        {% else %}<span class="badge bg-secondary rounded-pill">Inactivo</span>{% endif %}
+      </div>
+      <p class="text-muted small">{{ challenge.description }}</p>
+      <div class="row g-2 text-center mb-3">
+        <div class="col-4"><div class="p-2 rounded-3" style="background:#E3F2FD;">
+          <div class="text-muted" style="font-size:.7rem;">Tipo</div>
+          <div class="fw-700 text-primary small">{{ challenge.get_challenge_type_display }}</div></div></div>
+        <div class="col-4"><div class="p-2 rounded-3" style="background:#E3F2FD;">
+          <div class="text-muted" style="font-size:.7rem;">Duración</div>
+          <div class="fw-700 text-primary small">{{ challenge.get_duration_label }}</div></div></div>
+        <div class="col-4"><div class="p-2 rounded-3" style="background:#FFF8E1;">
+          <div class="text-muted" style="font-size:.7rem;">Puntos</div>
+          <div class="fw-700 text-warning small">{{ challenge.points }} pts</div></div></div>
+      </div>
+
+      {% if challenge.video %}
+      <div class="p-3 rounded-3 mb-3" style="background:#F0F4F8;">
+        <div class="fw-600 small text-primary mb-2"><i class="bi bi-play-circle me-1"></i>Video del desafío</div>
+        {% with thumb=challenge.video.get_thumbnail %}
+        {% if thumb %}<img src="{{ thumb }}" class="img-fluid rounded-3 mb-2" alt="{{ challenge.video.title }}">{% endif %}
+        {% endwith %}
+        <div class="fw-600">{{ challenge.video.title }}</div>
+        <div class="text-muted small mb-2">{{ challenge.video.get_category_display }}</div>
+        <a href="{{ challenge.video.youtube_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-danger rounded-pill">
+          <i class="bi bi-youtube me-1"></i>Ver en YouTube
+        </a>
+      </div>
+      {% else %}
+      <div class="p-3 rounded-3 mb-3 small text-muted" style="background:#F0F4F8;">
+        <i class="bi bi-camera-video-off me-1"></i>Sin video. Puedes asociar uno al <a href="{% url 'challenge_edit' challenge.pk %}">editar el desafío</a>.
+      </div>
+      {% endif %}
+
+      <div class="d-flex gap-2">
+        <a href="{% url 'challenge_edit' challenge.pk %}" class="btn btn-outline-secondary btn-sm rounded-pill flex-fill"><i class="bi bi-pencil me-1"></i>Editar</a>
+        <a href="{% url 'challenge_delete' challenge.pk %}" class="btn btn-outline-danger btn-sm rounded-pill flex-fill"><i class="bi bi-trash me-1"></i>Eliminar</a>
+      </div>
+    </div>
+
+    <div class="kinc-form-card">
+      <h6 class="fw-700 mb-3" style="color:#1565C0;"><i class="bi bi-bar-chart me-2"></i>Entregas de todos los pacientes</h6>
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted small">Total</span><span class="fw-700">{{ total_subs }}</span></div>
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted small">Aprobadas</span><span class="fw-700 text-success">{{ approved_subs }}</span></div>
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted small">Por revisar</span><span class="fw-700 text-warning">{{ pending_subs }}</span></div>
+      <div class="d-flex justify-content-between py-2"><span class="text-muted small">Rechazadas</span><span class="fw-700 text-danger">{{ rejected_subs }}</span></div>
+    </div>
+  </div>
+
+  <!-- PACIENTES -->
+  <div class="col-lg-7">
+    <div class="kinc-form-card mb-4">
+      <h6 class="fw-700 mb-3" style="color:#1565C0;"><i class="bi bi-people-fill me-2"></i>Pacientes con este desafío ({{ assignments|length }})</h6>
+      {% for pc in assignments %}
+      <div class="d-flex align-items-center gap-2 py-2 {% if not forloop.last %}border-bottom{% endif %}">
+        <div class="avatar-circle" style="width:36px;height:36px;font-size:.8rem;flex-shrink:0;">
+          {{ pc.patient.user.first_name.0|upper }}{{ pc.patient.user.last_name.0|upper }}
+        </div>
+        <a href="{% url 'patient_challenge_detail' pc.pk %}" class="flex-grow-1 text-decoration-none" style="min-width:0;">
+          <div class="fw-600 small text-dark text-truncate">{{ pc.patient.user.get_full_name }}</div>
+          <div class="d-flex gap-1 flex-wrap mt-1">
+            <span class="badge rounded-pill {% if pc.status == 'activo' %}bg-success{% else %}bg-warning text-dark{% endif %}" style="font-size:.68rem;">{{ pc.get_status_display }}</span>
+            {% if pc.total_approved %}<span class="badge rounded-pill" style="background:#E8F5E9;color:#2E7D32;font-size:.68rem;">✓ {{ pc.total_approved }}</span>{% endif %}
+            {% if pc.pending_count %}<span class="badge rounded-pill bg-warning text-dark" style="font-size:.68rem;"><i class="bi bi-camera me-1"></i>{{ pc.pending_count }} por revisar</span>{% endif %}
+          </div>
+        </a>
+        <a href="{% url 'patient_challenge_detail' pc.pk %}" class="btn btn-sm btn-outline-primary rounded-pill" title="Ver entregas"><i class="bi bi-eye"></i></a>
+        <a href="{% url 'patient_challenge_remove' pc.pk %}" class="btn btn-sm btn-outline-danger rounded-pill" title="Quitar a este paciente"><i class="bi bi-trash"></i></a>
+      </div>
+      {% empty %}
+      <p class="text-muted small mb-0">Este desafío aún no está asignado a ningún paciente.</p>
+      {% endfor %}
+    </div>
+
+    <div class="kinc-form-card">
+      <h6 class="fw-700 mb-3" style="color:#1565C0;"><i class="bi bi-person-plus-fill me-2"></i>Asignar a más pacientes</h6>
+      {% if not challenge.is_active %}
+        <p class="text-muted small mb-0">El desafío está inactivo: actívalo (editar) para poder asignarlo.</p>
+      {% elif unassigned %}
+      <form method="post" action="{% url 'challenge_assign_patients' challenge.pk %}">
+        {% csrf_token %}
+        <div class="form-check mb-2 pb-2 border-bottom">
+          <input class="form-check-input" type="checkbox" id="selectAll">
+          <label class="form-check-label small fw-600" for="selectAll">Seleccionar todos</label>
+        </div>
+        {% for p in unassigned %}
+        <div class="form-check mb-1">
+          <input class="form-check-input patient-check" type="checkbox" name="patient_ids" value="{{ p.pk }}" id="p{{ p.pk }}">
+          <label class="form-check-label" for="p{{ p.pk }}">{{ p.user.get_full_name }}</label>
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-kinc rounded-pill px-4 mt-3"><i class="bi bi-send me-1"></i>Asignar a los seleccionados</button>
+      </form>
+      {% else %}
+        <p class="text-muted small mb-0">Todos tus pacientes ya tienen este desafío.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  var all = document.getElementById('selectAll');
+  if (all) {
+    all.addEventListener('change', function () {
+      document.querySelectorAll('.patient-check').forEach(function (c) { c.checked = all.checked; });
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ action }} desafío – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-trophy me-2"></i>{{ action }} desafío{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="kinc-form-card">
+      <h5 class="fw-700 mb-4" style="color:#1565C0;"><i class="bi bi-trophy me-2"></i>{{ action }} desafío</h5>
+      <form method="post">
+        {% csrf_token %}
+        {% include 'core/_form_errors.html' %}
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Nombre del desafío *</label>
+            {{ form.name }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Descripción *</label>
+            {{ form.description }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Tipo de desafío *</label>
+            {{ form.challenge_type }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" id="duration-label">Duración (días) *</label>
+            {{ form.duration }}
+            <div class="form-text text-muted" id="duration-help">Ingresa la cantidad de días.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Puntos al completar *</label>
+            {{ form.points }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Video asociado <span class="text-muted fw-400">(opcional)</span></label>
+            {{ form.video }}
+            <div class="form-text">Si seleccionas un video, el paciente podrá verlo directamente desde el desafío.</div>
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-kinc rounded-pill px-4"><i class="bi bi-check-lg me-2"></i>{{ action }}</button>
+          <a href="{% url 'challenge_list' %}" class="btn btn-outline-secondary rounded-pill px-4">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const typeSelect = document.getElementById('id_challenge_type');
+const label = document.getElementById('duration-label');
+const help = document.getElementById('duration-help');
+const labels = { diario: 'Duración (días)', semanal: 'Duración (semanas)', mensual: 'Duración (meses)' };
+const helps = { diario: 'Ingresa la cantidad de días.', semanal: 'Ingresa la cantidad de semanas.', mensual: 'Ingresa la cantidad de meses.' };
+
+function updateLabel() {
+  const val = typeSelect.value;
+  label.textContent = labels[val] || 'Duración';
+  help.textContent = helps[val] || '';
+}
+typeSelect.addEventListener('change', updateLabel);
+updateLabel();
+</script>
+{% endblock %}

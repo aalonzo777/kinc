@@ -1,0 +1,154 @@
+{% extends 'core/base.html' %}
+{% block title %}Mis desafíos – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-trophy-fill me-2"></i>Mis desafíos{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  {% for pc in my_challenges %}
+  <div class="col-md-6">
+    <div class="challenge-card">
+      <div class="d-flex align-items-start justify-content-between mb-2">
+        <div class="flex-grow-1">
+          <div class="fw-700 fs-6">{{ pc.challenge.name }}</div>
+          <div class="text-muted small mb-2">{{ pc.challenge.description }}</div>
+          <div class="d-flex gap-2 flex-wrap mb-2">
+            <span class="badge rounded-pill {% if pc.status == 'activo' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+              {{ pc.get_status_display }}
+            </span>
+            <span class="badge rounded-pill bg-light text-dark">{{ pc.challenge.get_challenge_type_display }}</span>
+            <span class="badge rounded-pill" style="background:#E3F2FD;color:#1565C0;">
+              <i class="bi bi-star-fill me-1"></i>{{ pc.challenge.points }} pts/entrega
+            </span>
+          </div>
+
+          <!-- ESTADÍSTICAS DE ENTREGAS -->
+          {% if pc.status == 'activo' %}
+          <div class="d-flex gap-3 mb-2" style="font-size:.8rem;">
+            <span class="text-success fw-600"><i class="bi bi-check-circle me-1"></i>{{ pc.total_approved }} aprobadas</span>
+            <span class="text-muted"><i class="bi bi-arrow-repeat me-1"></i>{{ pc.total_submissions }} totales</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- VIDEO ASOCIADO -->
+      {% if pc.challenge.video %}
+      <div class="p-2 rounded-3 mb-2" style="background:#F0F4F8;font-size:.82rem;">
+        <i class="bi bi-play-circle-fill text-danger me-1"></i>
+        <strong>{{ pc.challenge.video.title }}</strong>
+        <a href="{{ pc.challenge.video.youtube_url }}" target="_blank" class="ms-2 text-danger">Ver →</a>
+      </div>
+      {% endif %}
+
+      <!-- ÚLTIMA ENTREGA -->
+      {% with last=pc.last_submission %}
+      {% if last %}
+      <div class="p-2 rounded-3 mb-3" style="background:{% if last.status == 'aprobado' %}#E8F5E9{% elif last.status == 'rechazado' %}#FFEBEE{% else %}#FFF8E1{% endif %};font-size:.82rem;">
+        <div class="fw-600 mb-1">
+          Última entrega:
+          <span class="badge rounded-pill ms-1
+            {% if last.status == 'aprobado' %}bg-success
+            {% elif last.status == 'rechazado' %}bg-danger
+            {% else %}bg-warning text-dark{% endif %}">
+            {{ last.get_status_display }}
+          </span>
+          <span class="text-muted ms-1">{{ last.submitted_at|date:"d/m H:i" }}</span>
+        </div>
+        {% if last.kin_feedback %}
+        <div class="text-muted fst-italic">"{{ last.kin_feedback|truncatechars:80 }}"</div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      <!-- ACCIONES -->
+      {% if pc.status == 'pendiente' %}
+        <form method="post" action="{% url 'accept_challenge' pc.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-kinc btn-sm rounded-pill w-100">
+            <i class="bi bi-check-circle me-1"></i>Aceptar desafío
+          </button>
+        </form>
+
+      {% elif pc.status == 'activo' %}
+        {% if pc.can_submit_today %}
+          <button class="btn btn-outline-primary btn-sm rounded-pill w-100"
+                  data-bs-toggle="collapse" data-bs-target="#proof-{{ pc.pk }}">
+            <i class="bi bi-camera me-1"></i>Enviar nueva entrega
+          </button>
+          <div class="collapse mt-2" id="proof-{{ pc.pk }}">
+            <form method="post" action="{% url 'submit_proof' pc.pk %}" enctype="multipart/form-data"
+                  class="p-3 rounded-3" style="background:#F0F4F8;">
+              {% csrf_token %}
+              <div class="mb-2">
+                <label class="form-label small fw-600">Foto de evidencia</label>
+                <input type="file" name="proof_photo" data-resize accept="image/jpeg,image/png,image/webp" required class="form-control form-control-sm rounded-3">
+                <div class="form-text">JPG, PNG o WEBP. La foto se reduce automáticamente (máx. 4 MB).</div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-600">Mensaje (opcional)</label>
+                <textarea name="proof_message" maxlength="500" class="form-control form-control-sm rounded-3" rows="2"
+                          placeholder="Cuéntale a tu kinesiólogo..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-success btn-sm rounded-pill w-100">
+                <i class="bi bi-send me-1"></i>Enviar entrega
+              </button>
+            </form>
+          </div>
+        {% else %}
+          <div class="alert py-2 rounded-3 mb-0 small text-center"
+               style="background:#E3F2FD;color:#1565C0;border:none;">
+            <i class="bi bi-clock me-1"></i>
+            {% if pc.challenge.challenge_type == 'diario' %}Próxima entrega disponible mañana
+            {% elif pc.challenge.challenge_type == 'semanal' %}Próxima entrega disponible la próxima semana
+            {% else %}Próxima entrega disponible el próximo mes{% endif %}
+          </div>
+        {% endif %}
+      {% endif %}
+
+      <div class="text-muted mt-2" style="font-size:.72rem;">
+        <i class="bi bi-calendar me-1"></i>Asignado: {{ pc.assigned_at|date:"d/m/Y" }}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-5">
+    <i class="bi bi-trophy" style="font-size:3rem;color:#CBD5E0;"></i>
+    <p class="mt-3 text-muted">No tienes desafíos asignados aún.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Reduce las fotos del celular antes de enviarlas (el servidor admite máximo 4 MB por petición).
+  // Si el navegador no lo soporta, se envía la foto original y el servidor valida el tamaño.
+  (function () {
+    var MAX_SIDE = 1600, MAX_BYTES = 3.5 * 1024 * 1024;
+    document.querySelectorAll('input[data-resize]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        var file = input.files && input.files[0];
+        if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type) || typeof DataTransfer === 'undefined') return;
+        if (file.size <= MAX_BYTES && file.type === 'image/jpeg') return;
+        var img = new Image(), url = URL.createObjectURL(file);
+        img.onload = function () {
+          var scale = Math.min(1, MAX_SIDE / Math.max(img.width, img.height));
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(function (blob) {
+            URL.revokeObjectURL(url);
+            if (!blob || blob.size >= file.size && file.type === 'image/jpeg') return;
+            var dt = new DataTransfer();
+            dt.items.add(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+            input.files = dt.files;
+          }, 'image/jpeg', 0.85);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); };
+        img.src = url;
+      });
+    });
+  })();
+</script>
+{% endblock %}

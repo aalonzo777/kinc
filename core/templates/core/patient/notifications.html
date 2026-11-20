@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+{% block title %}Notificaciones – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-bell-fill me-2"></i>Notificaciones{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    {% if notifications %}
+      {% for n in notifications %}
+      {% if n.link %}<a href="{{ n.link }}" class="text-decoration-none">{% endif %}
+      <div class="stat-card card mb-3 {% if not n.is_read %}border-start border-primary border-3{% endif %}" style="{% if n.link %}cursor:pointer;{% endif %}">
+        <div class="card-body d-flex align-items-start gap-3">
+          <div class="stat-icon flex-shrink-0" style="width:40px;height:40px;font-size:1rem;
+            {% if n.notification_type == 'desafio_completado' %}background:#E8F5E9;color:#2E7D32;
+            {% elif n.notification_type == 'recompensa_aprobada' %}background:#FFF8E1;color:#F57F17;
+            {% elif n.notification_type == 'desafio_asignado' %}background:#E3F2FD;color:#1565C0;
+            {% else %}background:#E3F2FD;color:#1565C0;{% endif %}
+            border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            {% if n.notification_type == 'desafio_completado' or n.notification_type == 'desafio_asignado' %}
+              <i class="bi bi-trophy-fill"></i>
+            {% elif n.notification_type == 'recompensa_aprobada' %}
+              <i class="bi bi-gift-fill"></i>
+            {% else %}
+              <i class="bi bi-bell-fill"></i>
+            {% endif %}
+          </div>
+          <div class="flex-grow-1">
+            <div class="fw-700">{{ n.title }}</div>
+            <div class="text-muted small">{{ n.message }}</div>
+            <div class="text-muted" style="font-size:.75rem;margin-top:.3rem;">
+              {{ n.created_at|date:"d/m/Y H:i" }}
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            {% if not n.is_read %}<span class="notif-dot flex-shrink-0"></span>{% endif %}
+            {% if n.link %}<i class="bi bi-chevron-right text-muted small"></i>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if n.link %}</a>{% endif %}
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-bell-slash" style="font-size:3rem;color:#CBD5E0;"></i>
+        <p class="mt-3 text-muted">No tienes notificaciones.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

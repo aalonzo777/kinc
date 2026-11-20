@@ -1,0 +1,59 @@
+{% extends 'core/base.html' %}
+{% block title %}Desafíos – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-trophy-fill me-2"></i>Desafíos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-end mb-4">
+  <a href="{% url 'challenge_add' %}" class="btn btn-kinc rounded-pill px-4">
+    <i class="bi bi-plus-circle me-2"></i>Nuevo desafío
+  </a>
+</div>
+
+<div class="kinc-table">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Duración</th>
+        <th class="text-center">Puntos</th>
+        <th class="text-center">Estado</th>
+        <th class="text-center">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ch in challenges %}
+      <tr>
+        <td>
+          <a href="{% url 'challenge_detail' ch.pk %}" class="fw-600 text-decoration-none">{{ ch.name }}</a>
+          <div class="text-muted small">{{ ch.description|truncatechars:60 }}</div>
+        </td>
+        <td><span class="badge rounded-pill bg-primary bg-opacity-10 text-primary">{{ ch.get_challenge_type_display }}</span></td>
+        <td class="text-muted small">{{ ch.get_duration_label }}</td>
+        <td class="text-center"><span class="points-badge"><i class="bi bi-star-fill"></i>{{ ch.points }}</span></td>
+        <td class="text-center">
+          {% if ch.is_active %}
+          <span class="badge bg-success rounded-pill">Activo</span>
+          {% else %}
+          <span class="badge bg-secondary rounded-pill">Inactivo</span>
+          {% endif %}
+        </td>
+        <td class="text-center">
+          <a href="{% url 'challenge_detail' ch.pk %}" class="btn btn-sm btn-outline-primary rounded-pill me-1" title="Ver detalle">
+            <i class="bi bi-eye"></i>
+          </a>
+          <a href="{% url 'challenge_edit' ch.pk %}" class="btn btn-sm btn-outline-secondary rounded-pill me-1">
+            <i class="bi bi-pencil"></i>
+          </a>
+          <a href="{% url 'challenge_delete' ch.pk %}" class="btn btn-sm btn-outline-danger rounded-pill">
+            <i class="bi bi-trash"></i>
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center py-4 text-muted">No hay desafíos creados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

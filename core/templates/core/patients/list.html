@@ -1,0 +1,68 @@
+{% extends 'core/base.html' %}
+{% block title %}Pacientes – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-people-fill me-2"></i>Pacientes{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <form class="d-flex gap-2" method="get">
+    <input type="search" name="q" value="{{ q }}" class="form-control rounded-pill"
+           placeholder="Buscar paciente..." style="width:260px;">
+    <button type="submit" class="btn btn-outline-primary rounded-pill"><i class="bi bi-search"></i></button>
+  </form>
+  <a href="{% url 'patient_add' %}" class="btn btn-kinc rounded-pill px-4">
+    <i class="bi bi-person-plus-fill me-2"></i>Agregar paciente
+  </a>
+</div>
+
+<div class="kinc-table">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Paciente</th>
+        <th>Correo</th>
+        <th>Teléfono</th>
+        <th>Edad</th>
+        <th class="text-center">Puntos</th>
+        <th>Última sesión</th>
+        <th class="text-center">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in patients %}
+      <tr>
+        <td>
+          <div class="d-flex align-items-center gap-2">
+            <div class="avatar-circle" style="width:34px;height:34px;font-size:.85rem;">
+              {{ p.user.first_name.0|upper }}{{ p.user.last_name.0|upper }}
+            </div>
+            <div>
+              <div class="fw-600">{{ p.user.get_full_name }}</div>
+            </div>
+          </div>
+        </td>
+        <td class="text-muted small">{{ p.user.email }}</td>
+        <td class="text-muted small">{{ p.user.phone|default:"–" }}</td>
+        <td class="text-muted small">{{ p.user.age|default:"–" }}</td>
+        <td class="text-center">
+          <span class="points-badge"><i class="bi bi-star-fill"></i>{{ p.points }}</span>
+        </td>
+        <td class="text-muted small">{{ p.last_session|date:"d/m/Y H:i"|default:"–" }}</td>
+        <td class="text-center">
+          <a href="{% url 'patient_detail' p.pk %}" class="btn btn-sm btn-outline-primary rounded-pill me-1">
+            <i class="bi bi-eye"></i>
+          </a>
+          <a href="{% url 'patient_edit' p.pk %}" class="btn btn-sm btn-outline-secondary rounded-pill me-1">
+            <i class="bi bi-pencil"></i>
+          </a>
+          <a href="{% url 'patient_delete' p.pk %}" class="btn btn-sm btn-outline-danger rounded-pill">
+            <i class="bi bi-trash"></i>
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center py-4 text-muted">No se encontraron pacientes.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

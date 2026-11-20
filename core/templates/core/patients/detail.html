@@ -1,0 +1,185 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ patient.user.get_full_name }} – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-person-fill me-2"></i>{{ patient.user.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- INFO PACIENTE -->
+  <div class="col-lg-4">
+    <div class="kinc-form-card text-center mb-3">
+      <div class="avatar-circle mx-auto mb-3" style="width:64px;height:64px;font-size:1.5rem;">
+        {{ patient.user.first_name.0|upper }}{{ patient.user.last_name.0|upper }}
+      </div>
+      <h5 class="fw-700 mb-1">{{ patient.user.get_full_name }}</h5>
+      <div class="text-muted small mb-3">{{ patient.user.email }}</div>
+      <div class="points-badge justify-content-center mb-3">
+        <i class="bi bi-star-fill"></i>{{ patient.points }} puntos
+      </div>
+      <div class="text-start" style="font-size:.875rem;">
+        {% if patient.user.phone %}
+        <div class="mb-2"><i class="bi bi-telephone me-2 text-primary"></i>{{ patient.user.phone }}</div>
+        {% endif %}
+        {% if patient.user.age %}
+        <div class="mb-2"><i class="bi bi-calendar me-2 text-primary"></i>{{ patient.user.age }} años</div>
+        {% endif %}
+        {% if patient.last_session %}
+        <div class="mb-2"><i class="bi bi-clock me-2 text-primary"></i>{{ patient.last_session|date:"d/m/Y H:i" }}</div>
+        {% endif %}
+        {% if patient.notes %}
+        <div class="mt-3 p-2 rounded-3" style="background:#F0F4F8;">
+          <div class="fw-600 mb-1 small text-muted">Notas clínicas</div>
+          <div style="font-size:.83rem;">{{ patient.notes }}</div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-2 mt-3">
+        <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-outline-primary btn-sm rounded-pill flex-fill">
+          <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        <a href="{% url 'patient_delete' patient.pk %}" class="btn btn-outline-danger btn-sm rounded-pill flex-fill">
+          <i class="bi bi-trash me-1"></i>Eliminar
+        </a>
+      </div>
+      <div class="d-flex gap-2 mt-2 flex-wrap">
+        <a href="{% url 'patient_progress_chart' patient.pk %}" class="btn btn-kinc btn-sm rounded-pill flex-fill">
+          <i class="bi bi-graph-up me-1"></i>Progreso
+        </a>
+        <a href="{% url 'kin_chat' patient.pk %}" class="btn btn-outline-primary btn-sm rounded-pill flex-fill">
+          <i class="bi bi-chat-dots me-1"></i>Chat
+        </a>
+        <a href="{% url 'export_patient_pdf' patient.pk %}" class="btn btn-outline-danger btn-sm rounded-pill flex-fill">
+          <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+        </a>
+      </div>
+    </div>
+
+    <!-- RESUMEN PROGRESO -->
+    <div class="kinc-form-card">
+      <h6 class="fw-700 mb-3" style="color:#1565C0;"><i class="bi bi-bar-chart-fill me-2"></i>Resumen de progreso</h6>
+      <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3" style="background:#E3F2FD;">
+        <div class="small fw-600 text-primary">Desafíos asignados</div>
+        <div class="fw-800 text-primary fs-4">{{ active_challenges.count }}</div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3" style="background:#E8F5E9;">
+        <div class="small fw-600 text-success">Entregas aprobadas</div>
+        <div class="fw-800 text-success fs-4">{{ approved_count }}</div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center p-3 rounded-3" style="background:#FFF8E1;">
+        <div class="small fw-600 text-warning">Recompensas reclamadas</div>
+        <div class="fw-800 text-warning fs-4">{{ reward_claims.count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESAFÍOS Y ACTIVIDAD -->
+  <div class="col-lg-8">
+    <!-- ASIGNAR DESAFÍO -->
+    <div class="kinc-form-card mb-4">
+      <h6 class="fw-700 mb-3" style="color:#1565C0;"><i class="bi bi-plus-circle-fill me-2"></i>Asignar desafío</h6>
+      {% if available_challenges %}
+      <form method="post" action="{% url 'assign_challenge' patient.pk %}">
+        {% csrf_token %}
+        <div class="row g-2">
+          <div class="col">
+            <select name="challenge_id" class="form-select rounded-pill">
+              {% for ch in available_challenges %}
+              <option value="{{ ch.pk }}">{{ ch.name }} ({{ ch.get_challenge_type_display }} · {{ ch.points }} pts)</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-kinc rounded-pill px-4">
+              <i class="bi bi-send me-1"></i>Asignar
+            </button>
+          </div>
+        </div>
+      </form>
+      {% else %}
+      <p class="text-muted small mb-0">No hay desafíos disponibles para asignar. <a href="{% url 'challenge_add' %}">Crear nuevo</a></p>
+      {% endif %}
+    </div>
+
+    <!-- DESAFÍOS ASIGNADOS (clickeables) -->
+    <div class="kinc-form-card mb-4">
+      <h6 class="fw-700 mb-3" style="color:#1565C0;"><i class="bi bi-trophy-fill me-2"></i>Desafíos asignados</h6>
+      {% if active_challenges %}
+        {% for pc in active_challenges %}
+        <a href="{% url 'patient_challenge_detail' pc.pk %}" class="text-decoration-none">
+          <div class="challenge-card mb-2" style="cursor:pointer;">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="flex-grow-1">
+                <div class="fw-600 text-dark">{{ pc.challenge.name }}</div>
+                <div class="d-flex gap-2 flex-wrap mt-1">
+                  <span class="badge rounded-pill {% if pc.status == 'activo' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ pc.get_status_display }}</span>
+                  <span class="badge rounded-pill bg-light text-dark">{{ pc.challenge.get_challenge_type_display }}</span>
+                  <span class="badge rounded-pill" style="background:#E3F2FD;color:#1565C0;">
+                    <i class="bi bi-star-fill me-1"></i>{{ pc.challenge.points }} pts
+                  </span>
+                  {% if pc.pending_count %}
+                  <span class="badge rounded-pill bg-warning text-dark">
+                    <i class="bi bi-camera me-1"></i>{{ pc.pending_count }} por revisar
+                  </span>
+                  {% endif %}
+                  {% if pc.total_approved %}
+                  <span class="badge rounded-pill" style="background:#E8F5E9;color:#2E7D32;">
+                    ✓ {{ pc.total_approved }} aprobada{{ pc.total_approved|pluralize:"s" }}
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+              <i class="bi bi-chevron-right text-muted ms-2"></i>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted small mb-0">No hay desafíos asignados.</p>
+      {% endif %}
+    </div>
+
+    <!-- ENTREGAS APROBADAS -->
+    <div class="kinc-form-card mb-4">
+      <h6 class="fw-700 mb-3" style="color:#2E7D32;"><i class="bi bi-check-circle-fill me-2"></i>Entregas aprobadas</h6>
+      {% if approved_submissions %}
+        {% for sub in approved_submissions %}
+        <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+          <i class="bi bi-check-circle-fill text-success"></i>
+          <div class="flex-grow-1">
+            <div class="fw-600 small">{{ sub.patient_challenge.challenge.name }}</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ sub.reviewed_at|date:"d/m/Y H:i" }}</div>
+          </div>
+          <span class="points-badge" style="font-size:.75rem;padding:.2rem .6rem;">
+            <i class="bi bi-star-fill"></i>{{ sub.patient_challenge.challenge.points }}
+          </span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted small mb-0">Aún no hay entregas aprobadas.</p>
+      {% endif %}
+    </div>
+
+    <!-- RECOMPENSAS RECLAMADAS -->
+    <div class="kinc-form-card">
+      <h6 class="fw-700 mb-3" style="color:#F57F17;"><i class="bi bi-gift-fill me-2"></i>Recompensas reclamadas</h6>
+      {% if reward_claims %}
+        {% for claim in reward_claims %}
+        <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+          <i class="bi bi-gift-fill text-warning"></i>
+          <div class="flex-grow-1">
+            <div class="fw-600 small">{{ claim.reward.name }}</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ claim.claimed_at|date:"d/m/Y" }}</div>
+          </div>
+          <span class="badge rounded-pill
+            {% if claim.status == 'aprobado' %}bg-success{% elif claim.status == 'rechazado' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+            {{ claim.get_status_display }}
+          </span>
+          <span class="text-muted small">{{ claim.points_spent }} pts</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted small mb-0">No ha reclamado recompensas aún.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

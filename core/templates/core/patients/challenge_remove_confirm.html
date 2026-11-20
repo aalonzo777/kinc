@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}
+{% block title %}Quitar desafío – KINC{% endblock %}
+{% block page_title %}Quitar desafío asignado{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-5">
+  <div class="kinc-form-card text-center">
+    <div style="width:72px;height:72px;background:#FFEBEE;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+      <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size:2rem;"></i>
+    </div>
+    <h5 class="fw-700 mb-1">¿Quitar este desafío?</h5>
+    <p class="text-muted mb-1">Paciente: <strong>{{ pc.patient.user.get_full_name }}</strong></p>
+    <p class="text-muted mb-4">Desafío: <strong>{{ pc.challenge.name }}</strong></p>
+    <form method="post" class="d-flex gap-2 justify-content-center">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger rounded-pill px-4"><i class="bi bi-trash me-2"></i>Sí, quitar</button>
+      <a href="{% url 'patient_detail' pc.patient.pk %}" class="btn btn-outline-secondary rounded-pill px-4">Cancelar</a>
+    </form>
+  </div>
+</div></div>
+{% endblock %}

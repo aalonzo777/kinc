@@ -1,0 +1,180 @@
+{% extends 'core/base.html' %}
+{% block title %}Panel – KINC
+<!-- ENTREGAS PENDIENTES -->
+{% if pending_submissions %}
+<div class="mt-4 mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="fw-700 mb-0"><i class="bi bi-camera-fill me-2 text-warning"></i>Entregas por revisar</h5>
+    <span class="badge bg-warning text-dark rounded-pill">{{ pending_count }} pendiente{{ pending_count|pluralize:"s" }}</span>
+  </div>
+  <div class="row g-2">
+    {% for sub in pending_submissions %}
+    <div class="col-md-6 col-xl-4">
+      <a href="{% url 'patient_challenge_detail' sub.patient_challenge.pk %}" class="text-decoration-none">
+        <div class="d-flex align-items-center gap-3 p-3 rounded-3"
+             style="background:#fff;box-shadow:0 2px 8px rgba(245,127,23,.15);border-left:4px solid #F57F17;">
+          <div class="avatar-circle" style="width:38px;height:38px;font-size:.85rem;flex-shrink:0;background:#F57F17;">
+            {{ sub.patient_challenge.patient.user.first_name.0|upper }}{{ sub.patient_challenge.patient.user.last_name.0|upper }}
+          </div>
+          <div class="flex-grow-1 overflow-hidden">
+            <div class="fw-600 small text-dark text-truncate">{{ sub.patient_challenge.patient.user.get_full_name }}</div>
+            <div class="text-muted text-truncate" style="font-size:.75rem;">{{ sub.patient_challenge.challenge.name }}</div>
+            <div class="text-muted" style="font-size:.7rem;">{{ sub.submitted_at|date:"d/m H:i" }}</div>
+          </div>
+          <i class="bi bi-chevron-right text-warning"></i>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ACCESO RÁPIDO AL CHAT -->
+{% if patients %}
+<div class="mt-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="fw-700 mb-0"><i class="bi bi-chat-dots-fill me-2 text-primary"></i>Chat rápido</h5>
+  </div>
+  <div class="row g-2">
+    {% for p in patients %}
+    <div class="col-md-6 col-xl-4">
+      <a href="{% url 'kin_chat' p.pk %}" class="text-decoration-none">
+        <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background:#fff;box-shadow:0 2px 8px rgba(21,101,192,.08);transition:box-shadow .2s;">
+          <div class="avatar-circle" style="width:38px;height:38px;font-size:.9rem;flex-shrink:0;">
+            {{ p.user.first_name.0|upper }}{{ p.user.last_name.0|upper }}
+          </div>
+          <div class="flex-grow-1 min-width-0">
+            <div class="fw-600 small text-dark">{{ p.user.get_full_name }}</div>
+            <div class="text-muted" style="font-size:.75rem;">Abrir conversación</div>
+          </div>
+          <i class="bi bi-chevron-right text-muted small"></i>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block page_title %}<i class="bi bi-grid-1x2-fill me-2"></i>Panel Principal{% endblock %}
+
+{% block content %}
+<!-- ESTADÍSTICAS -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon bg-primary-soft"><i class="bi bi-people-fill"></i></div>
+        <div>
+          <div class="fw-800 fs-3 lh-1" style="color:#1565C0;">{{ total_patients }}</div>
+          <div class="text-muted small mt-1">Pacientes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon bg-success-soft"><i class="bi bi-trophy-fill"></i></div>
+        <div>
+          <div class="fw-800 fs-3 lh-1" style="color:#2E7D32;">{{ pending_count }}</div>
+          <div class="text-muted small mt-1">Entregas por revisar</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon bg-warning-soft"><i class="bi bi-gift-fill"></i></div>
+        <div>
+          <div class="fw-800 fs-3 lh-1" style="color:#F57F17;">–</div>
+          <div class="text-muted small mt-1">Recompensas pendientes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon bg-accent-soft"><i class="bi bi-bell-fill"></i></div>
+        <div>
+          <div class="fw-800 fs-3 lh-1" style="color:#00ACC1;">{{ unread_count }}</div>
+          <div class="text-muted small mt-1">Notificaciones nuevas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACCESOS RÁPIDOS -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <h6 class="text-muted fw-600 mb-2"><i class="bi bi-lightning-fill me-1 text-warning"></i>Acciones rápidas</h6>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'patient_add' %}" class="btn btn-kinc rounded-pill px-4">
+        <i class="bi bi-person-plus-fill me-2"></i>Nuevo paciente
+      </a>
+      <a href="{% url 'challenge_add' %}" class="btn btn-outline-primary rounded-pill px-4">
+        <i class="bi bi-plus-circle me-2"></i>Nuevo desafío
+      </a>
+      <a href="{% url 'reward_add' %}" class="btn btn-outline-primary rounded-pill px-4">
+        <i class="bi bi-gift me-2"></i>Nueva recompensa
+      </a>
+      <a href="{% url 'video_add' %}" class="btn btn-outline-primary rounded-pill px-4">
+        <i class="bi bi-camera-video me-2"></i>Agregar video
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- LISTA DE PACIENTES -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h5 class="fw-700 mb-0"><i class="bi bi-people-fill me-2 text-primary"></i>Mis pacientes</h5>
+  <a href="{% url 'patient_list' %}" class="btn btn-sm btn-outline-primary rounded-pill">Ver todos</a>
+</div>
+
+{% if patients %}
+<div class="row g-3">
+  {% for p in patients %}
+  <div class="col-md-6 col-xl-4">
+    <div class="patient-card">
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <div class="avatar-circle">{{ p.user.first_name.0|upper }}{{ p.user.last_name.0|upper }}</div>
+        <div>
+          <div class="fw-700">{{ p.user.get_full_name }}</div>
+          <div class="text-muted" style="font-size:.8rem;">{{ p.user.email }}</div>
+        </div>
+        <div class="ms-auto">
+          <span class="points-badge"><i class="bi bi-star-fill"></i>{{ p.points }}</span>
+        </div>
+      </div>
+      <div class="d-flex gap-3" style="font-size:.8rem;color:#6B7280;">
+        {% if p.user.phone %}<span><i class="bi bi-telephone me-1"></i>{{ p.user.phone }}</span>{% endif %}
+        {% if p.user.age %}<span><i class="bi bi-calendar me-1"></i>{{ p.user.age }} años</span>{% endif %}
+      </div>
+      {% if p.last_session %}
+      <div class="mt-2" style="font-size:.78rem;color:#9CA3AF;">
+        <i class="bi bi-clock me-1"></i>Última sesión: {{ p.last_session|date:"d/m/Y H:i" }}
+      </div>
+      {% endif %}
+      <div class="mt-3">
+        <a href="{% url 'patient_detail' p.pk %}" class="btn btn-sm btn-kinc rounded-pill w-100">
+          <i class="bi bi-eye me-1"></i>Ver detalles
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+  <i class="bi bi-people" style="font-size:3rem;color:#CBD5E0;"></i>
+  <p class="mt-3 text-muted">Aún no tienes pacientes registrados.</p>
+  <a href="{% url 'patient_add' %}" class="btn btn-kinc rounded-pill px-4">
+    <i class="bi bi-person-plus-fill me-2"></i>Agregar primer paciente
+  </a>
+</div>
+{% endif %}
+{% endblock %}

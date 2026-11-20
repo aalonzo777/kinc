@@ -1,0 +1,52 @@
+{% with n=request.resolver_match.url_name|default:'' %}
+{% if user.is_kinesiologo %}
+  <a href="{% url 'kin_dashboard' %}" class="nav-link {% if n == 'kin_dashboard' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-grid-1x2-fill"></i></span> Panel principal
+  </a>
+  <div class="px-3 py-2" style="color:rgba(255,255,255,.5);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Gestión</div>
+  <a href="{% url 'patient_list' %}" class="nav-link {% if n|slice:':7' == 'patient' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-people-fill"></i></span> Pacientes
+  </a>
+  <a href="{% url 'challenge_list' %}" class="nav-link {% if n|slice:':9' == 'challenge' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-trophy-fill"></i>{% if nav_badges.challenges %}<span class="nav-dot" title="Entregas por revisar"></span>{% endif %}</span> Desafíos
+  </a>
+  <a href="{% url 'video_list' %}" class="nav-link {% if n|slice:':5' == 'video' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-play-circle-fill"></i></span> Videos
+  </a>
+  <a href="{% url 'reward_list' %}" class="nav-link {% if n|slice:':6' == 'reward' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-gift-fill"></i>{% if nav_badges.rewards %}<span class="nav-dot" title="Recompensas por aprobar"></span>{% endif %}</span> Recompensas
+  </a>
+  <a href="{% url 'kin_chat_list' %}" class="nav-link {% if n|slice:':8' == 'kin_chat' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-chat-dots-fill"></i>{% if nav_badges.chat %}<span class="nav-dot" title="Mensajes nuevos"></span>{% endif %}</span> Mensajes
+  </a>
+  <div class="px-3 py-2" style="color:rgba(255,255,255,.5);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Sistema</div>
+  <a href="{% url 'kin_stats' %}" class="nav-link {% if n == 'kin_stats' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-bar-chart-fill"></i></span> Estadísticas
+  </a>
+  <a href="{% url 'kin_notifications' %}" class="nav-link {% if n == 'kin_notifications' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-bell-fill"></i>{% if nav_badges.notifications %}<span class="nav-dot" title="Notificaciones nuevas"></span>{% endif %}</span> Notificaciones
+  </a>
+{% else %}
+  <a href="{% url 'patient_dashboard' %}" class="nav-link {% if n == 'patient_dashboard' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-grid-1x2-fill"></i></span> Mi panel
+  </a>
+  <a href="{% url 'patient_challenges' %}" class="nav-link {% if n == 'patient_challenges' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-trophy-fill"></i>{% if nav_badges.challenges %}<span class="nav-dot" title="Desafíos nuevos"></span>{% endif %}</span> Mis desafíos
+  </a>
+  <a href="{% url 'patient_rewards' %}" class="nav-link {% if n == 'patient_rewards' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-gift-fill"></i></span> Recompensas
+  </a>
+  <a href="{% url 'my_progress_chart' %}" class="nav-link {% if n == 'my_progress_chart' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-graph-up"></i></span> Mi progreso
+  </a>
+  <a href="{% url 'patient_chat' %}" class="nav-link {% if n == 'patient_chat' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-chat-dots-fill"></i>{% if nav_badges.chat %}<span class="nav-dot" title="Mensajes nuevos"></span>{% endif %}</span> Chat
+  </a>
+  <a href="{% url 'patient_profile' %}" class="nav-link {% if n == 'patient_profile' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-person-fill"></i></span> Mi perfil
+  </a>
+  <a href="{% url 'patient_notifications' %}" class="nav-link {% if n == 'patient_notifications' %}active{% endif %}">
+    <span class="nav-icon"><i class="bi bi-bell-fill"></i>{% if nav_badges.notifications %}<span class="nav-dot" title="Notificaciones nuevas"></span>{% endif %}</span> Notificaciones
+  </a>
+{% endif %}
+{% endwith %}

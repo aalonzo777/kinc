@@ -1,0 +1,183 @@
+{% extends 'core/base.html' %}
+{% block title %}Detalle desafío – KINC{% endblock %}
+{% block page_title %}<i class="bi bi-trophy-fill me-2"></i>Detalle del desafío{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- COLUMNA IZQUIERDA: info del desafío -->
+  <div class="col-lg-4">
+    <div class="mb-3">
+      <a href="{% url 'patient_detail' pc.patient.pk %}" class="btn btn-outline-secondary btn-sm rounded-pill">
+        <i class="bi bi-arrow-left me-1"></i>Volver a ficha
+      </a>
+    </div>
+
+    <div class="kinc-form-card mb-3">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="avatar-circle" style="width:40px;height:40px;font-size:.9rem;">
+          {{ pc.patient.user.first_name.0|upper }}{{ pc.patient.user.last_name.0|upper }}
+        </div>
+        <div>
+          <div class="fw-700">{{ pc.patient.user.get_full_name }}</div>
+          <div class="text-muted small">{{ pc.patient.user.email }}</div>
+        </div>
+      </div>
+
+      <h5 class="fw-800 mb-1" style="color:#1565C0;">{{ pc.challenge.name }}</h5>
+      <div class="text-muted small mb-3">{{ pc.challenge.description }}</div>
+
+      <div class="row g-2 text-center mb-3">
+        <div class="col-4">
+          <div class="p-2 rounded-3" style="background:#E3F2FD;">
+            <div class="text-muted" style="font-size:.7rem;">Tipo</div>
+            <div class="fw-700 text-primary small">{{ pc.challenge.get_challenge_type_display }}</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="p-2 rounded-3" style="background:#FFF8E1;">
+            <div class="text-muted" style="font-size:.7rem;">Puntos</div>
+            <div class="fw-700 text-warning small">{{ pc.challenge.points }} pts</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="p-2 rounded-3" style="background:#E8F5E9;">
+            <div class="text-muted" style="font-size:.7rem;">Aprobadas</div>
+            <div class="fw-700 text-success small">{{ pc.total_approved }}</div>
+          </div>
+        </div>
+      </div>
+
+      {% if pc.challenge.video %}
+      <div class="p-3 rounded-3 mb-3" style="background:#F0F4F8;">
+        <div class="fw-600 small text-primary mb-1"><i class="bi bi-play-circle me-1"></i>Video asociado</div>
+        <div class="fw-600 small">{{ pc.challenge.video.title }}</div>
+        <a href="{{ pc.challenge.video.youtube_url }}" target="_blank" class="btn btn-sm btn-outline-danger rounded-pill mt-1">
+          <i class="bi bi-youtube me-1"></i>Ver video
+        </a>
+      </div>
+      {% endif %}
+
+      <div class="d-flex gap-2">
+        <a href="{% url 'patient_challenge_edit' pc.pk %}" class="btn btn-outline-secondary btn-sm rounded-pill flex-fill">
+          <i class="bi bi-pencil me-1"></i>Cambiar
+        </a>
+        <a href="{% url 'patient_challenge_remove' pc.pk %}" class="btn btn-outline-danger btn-sm rounded-pill flex-fill">
+          <i class="bi bi-trash me-1"></i>Quitar
+        </a>
+      </div>
+    </div>
+
+    <!-- RESUMEN ESTADÍSTICAS -->
+    <div class="kinc-form-card">
+      <h6 class="fw-700 mb-3" style="color:#1565C0;"><i class="bi bi-bar-chart me-2"></i>Resumen</h6>
+      <div class="d-flex justify-content-between py-2 border-bottom">
+        <span class="text-muted small">Total entregas</span>
+        <span class="fw-700">{{ pc.total_submissions }}</span>
+      </div>
+      <div class="d-flex justify-content-between py-2 border-bottom">
+        <span class="text-muted small">Aprobadas</span>
+        <span class="fw-700 text-success">{{ pc.total_approved }}</span>
+      </div>
+      <div class="d-flex justify-content-between py-2 border-bottom">
+        <span class="text-muted small">Pendientes</span>
+        <span class="fw-700 text-warning">{{ pending_count }}</span>
+      </div>
+      <div class="d-flex justify-content-between py-2">
+        <span class="text-muted small">Rechazadas</span>
+        <span class="fw-700 text-danger">{{ rejected_count }}</span>
+      </div>
+      <div class="mt-3 p-2 rounded-3 text-center" style="background:#FFF8E1;">
+        <div class="text-muted small">Puntos otorgados por este desafío</div>
+        <div class="fw-800 fs-4 text-warning">{{ total_points_given }} pts</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMNA DERECHA: entregas -->
+  <div class="col-lg-8">
+    <h5 class="fw-700 mb-3"><i class="bi bi-camera-fill me-2 text-primary"></i>Entregas del paciente</h5>
+
+    {% if submissions %}
+      {% for sub in submissions %}
+      <div class="kinc-form-card mb-3"
+           style="border-left:4px solid {% if sub.status == 'aprobado' %}#2E7D32{% elif sub.status == 'rechazado' %}#C62828{% else %}#F57F17{% endif %};">
+
+        <div class="d-flex align-items-start justify-content-between mb-2">
+          <div>
+            <span class="badge rounded-pill
+              {% if sub.status == 'aprobado' %}bg-success
+              {% elif sub.status == 'rechazado' %}bg-danger
+              {% else %}bg-warning text-dark{% endif %}">
+              {{ sub.get_status_display }}
+            </span>
+            <span class="text-muted small ms-2">{{ sub.submitted_at|date:"d/m/Y H:i" }}</span>
+          </div>
+          {% if sub.status == 'aprobado' %}
+          <span class="points-badge" style="font-size:.75rem;padding:.2rem .6rem;">
+            <i class="bi bi-star-fill"></i>+{{ pc.challenge.points }} pts
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- FOTO -->
+        {% if sub.proof_photo %}
+        <div class="mb-3">
+          <img src="{% url 'proof_image' sub.pk %}" alt="Prueba"
+               style="max-width:100%;max-height:320px;object-fit:contain;border-radius:10px;box-shadow:0 3px 12px rgba(0,0,0,.12);">
+        </div>
+        {% else %}
+        <div class="alert alert-light py-2 small mb-3">
+          <i class="bi bi-camera-slash me-1"></i>Sin fotografía adjunta.
+        </div>
+        {% endif %}
+
+        <!-- MENSAJE -->
+        {% if sub.proof_message %}
+        <div class="p-3 rounded-3 mb-3" style="background:#F0F4F8;">
+          <div class="text-muted small fw-600 mb-1"><i class="bi bi-chat-quote me-1"></i>Mensaje del paciente:</div>
+          <div style="font-size:.9rem;">{{ sub.proof_message }}</div>
+        </div>
+        {% endif %}
+
+        <!-- FEEDBACK DEL KIN -->
+        {% if sub.kin_feedback %}
+        <div class="p-3 rounded-3 mb-3" style="background:#E8F5E9;">
+          <div class="text-muted small fw-600 mb-1"><i class="bi bi-person-badge me-1"></i>Tu feedback:</div>
+          <div style="font-size:.9rem;">{{ sub.kin_feedback }}</div>
+        </div>
+        {% endif %}
+
+        <!-- ACCIONES (solo si está pendiente) -->
+        {% if sub.status == 'pendiente' %}
+        <form method="post" action="{% url 'challenge_verify' pc.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="submission_pk" value="{{ sub.pk }}">
+          <div class="mb-2">
+            <textarea name="feedback" maxlength="500" class="form-control form-control-sm rounded-3" rows="2"
+                      placeholder="Feedback opcional para el paciente..."></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button name="action" value="approve" class="btn btn-success rounded-pill px-4">
+              <i class="bi bi-check-circle-fill me-1"></i>Aprobar (+{{ pc.challenge.points }} pts)
+            </button>
+            <button name="action" value="reject" class="btn btn-outline-danger rounded-pill px-4">
+              <i class="bi bi-x-circle me-1"></i>Rechazar
+            </button>
+          </div>
+        </form>
+        {% elif sub.reviewed_at %}
+        <div class="text-muted small">
+          <i class="bi bi-clock me-1"></i>Revisado: {{ sub.reviewed_at|date:"d/m/Y H:i" }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-5" style="background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+        <i class="bi bi-camera" style="font-size:3rem;color:#CBD5E0;"></i>
+        <p class="mt-3 text-muted">El paciente no ha enviado entregas aún.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

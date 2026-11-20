@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+{% block title %}Eliminar recompensa – KINC{% endblock %}
+{% block page_title %}Eliminar recompensa{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-5">
+  <div class="kinc-form-card text-center">
+    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size:3rem;"></i>
+    <h5 class="fw-700 my-3">¿Eliminar "{{ reward.name }}"?</h5>
+    <form method="post" class="d-flex gap-2 justify-content-center">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger rounded-pill px-4">Sí, eliminar</button>
+      <a href="{% url 'reward_list' %}" class="btn btn-outline-secondary rounded-pill px-4">Cancelar</a>
+    </form>
+  </div>
+</div></div>
+{% endblock %}
