@@ -1,8 +1,8 @@
 Django>=4.2,<5.0
 Pillow>=10.0.0
 reportlab>=4.0
-dj-database-url>=2.1
+dj-database-url
 psycopg[binary]>=3.1
 django-storages[s3]>=1.14
-psycopg2-binary>=2.9.13
-dj-database-url>=4.2
+psycopg2-binary
+dj-database-url
