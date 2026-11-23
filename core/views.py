@@ -345,14 +345,40 @@ def challenge_edit(request, pk):
     return render(request, 'core/challenges/form.html', {'form': form, 'action': 'Editar', 'challenge': challenge})
 
 
+
 @kinesiologo_required
 def challenge_delete(request, pk):
-    challenge = get_object_or_404(Challenge, pk=pk, kinesiologo=request.user)
+    """No permite eliminar desafíos que estén en progreso o completados."""
+
+    challenge = get_object_or_404(
+        Challenge,
+        pk=pk,
+        kinesiologo=request.user
+    )
+
+    protected_assignments = challenge.patient_challenges.filter(
+        status__in=['activo', 'completado']
+    )
+
+    if protected_assignments.exists():
+        messages.error(
+            request,
+            'No puedes eliminar este desafío porque tiene pacientes '
+            'con desafíos en progreso o completados.'
+        )
+        return redirect('challenge_detail', pk=challenge.pk)
+
     if request.method == 'POST':
         challenge.delete()
         messages.success(request, 'Desafío eliminado.')
         return redirect('challenge_list')
-    return render(request, 'core/challenges/confirm_delete.html', {'challenge': challenge})
+
+    return render(
+        request,
+        'core/challenges/confirm_delete.html',
+        {'challenge': challenge}
+    )
+
 
 
 
@@ -509,34 +535,52 @@ def challenge_verify(request, pc_pk):
 @kinesiologo_required
 @require_POST
 def reassign_challenge(request, pc_pk):
-    """
-    Crea una nueva instancia del mismo desafío para el mismo paciente (nuevo intento).
-    Solo disponible si el desafío está completado.
-    """
-    pc = get_object_or_404(
-        PatientChallenge.objects.select_related('patient', 'challenge'),
-        pk=pc_pk, challenge__kinesiologo=request.user,
-    )
-    if pc.status != 'completado':
-        messages.warning(request, 'Solo puedes reasignar desafíos completados.')
-        return redirect('patient_challenge_detail', pc_pk=pc.pk)
+    """Crea un nuevo intento del desafío para el mismo paciente."""
 
-    # Calcular el número del próximo intento
-    last_attempt = PatientChallenge.objects.filter(
-        patient=pc.patient, challenge=pc.challenge
-    ).order_by('-attempt').values_list('attempt', flat=True).first() or 0
+    with transaction.atomic():
+        pc = get_object_or_404(
+            PatientChallenge.objects.select_for_update().select_related(
+                'patient__user', 'challenge'
+            ),
+            pk=pc_pk,
+            challenge__kinesiologo=request.user,
+        )
 
-    new_pc = PatientChallenge.objects.create(
-        patient=pc.patient,
-        challenge=pc.challenge,
-        status='pendiente',
-        attempt=last_attempt + 1,
-    )
+        if pc.status != 'completado':
+            messages.error(
+                request,
+                'Solo puedes reasignar desafíos completados.'
+            )
+            return redirect('patient_challenge_detail', pc_pk=pc.pk)
+
+        last_attempt = PatientChallenge.objects.filter(
+            patient=pc.patient,
+            challenge=pc.challenge
+        ).order_by('-attempt').values_list('attempt', flat=True).first() or 0
+
+        new_pc = PatientChallenge.objects.create(
+            patient=pc.patient,
+            challenge=pc.challenge,
+            status='pendiente',
+            attempt=last_attempt + 1,
+        )
+
+        create_notification(
+            pc.patient.user,
+            'desafio_asignado',
+            '¡Nuevo intento asignado!',
+            f'Tu kinesiólogo te asignó nuevamente el desafío: '
+            f'{pc.challenge.name}. Intento #{new_pc.attempt}.',
+            link='/paciente/desafios/'
+        )
+
     messages.success(
         request,
-        f'Desafío "{pc.challenge.name}" reasignado como intento #{new_pc.attempt}.'
+        f'Desafío reasignado correctamente como intento #{new_pc.attempt}.'
     )
+
     return redirect('patient_challenge_detail', pc_pk=new_pc.pk)
+
 
 
 # ─── RECOMPENSAS CRUD ───
@@ -718,17 +762,42 @@ def patient_challenge_detail(request, pc_pk):
     })
 
 
+
 @kinesiologo_required
 def patient_challenge_remove(request, pc_pk):
-    """Quitar (eliminar) un desafío ya asignado a un paciente."""
-    pc = get_object_or_404(PatientChallenge, pk=pc_pk, challenge__kinesiologo=request.user)
+    """Solo permite quitar desafíos que todavía están pendientes."""
+
+    pc = get_object_or_404(
+        PatientChallenge,
+        pk=pc_pk,
+        challenge__kinesiologo=request.user
+    )
+
     patient_pk = pc.patient.pk
+
+    if pc.status != 'pendiente':
+        messages.error(
+            request,
+            'No puedes eliminar un desafío que está en progreso o completado.'
+        )
+        return redirect('patient_challenge_detail', pc_pk=pc.pk)
+
     if request.method == 'POST':
         challenge_name = pc.challenge.name
         pc.delete()
-        messages.success(request, f'Desafío "{challenge_name}" quitado al paciente.')
+
+        messages.success(
+            request,
+            f'Desafío "{challenge_name}" quitado al paciente.'
+        )
         return redirect('patient_detail', pk=patient_pk)
-    return render(request, 'core/patients/challenge_remove_confirm.html', {'pc': pc})
+
+    return render(
+        request,
+        'core/patients/challenge_remove_confirm.html',
+        {'pc': pc}
+    )
+
 
 
 @kinesiologo_required

@@ -76,7 +76,10 @@
           </div>
         </a>
         <a href="{% url 'patient_challenge_detail' pc.pk %}" class="btn btn-sm btn-outline-primary rounded-pill" title="Ver entregas"><i class="bi bi-eye"></i></a>
-        <a href="{% url 'patient_challenge_remove' pc.pk %}" class="btn btn-sm btn-outline-danger rounded-pill" title="Quitar a este paciente"><i class="bi bi-trash"></i></a>
+        {% if pc.status == 'pendiente' %}
+        <a href="{% url 'patient_challenge_remove' pc.pk %}" class="btn btn-sm btn-outline-danger rounded-pill" title="Quitar a este paciente"> <i class="bi bi-trash"></i></a>
+        {% endif %}
+        
       </div>
       {% empty %}
       <p class="text-muted small mb-0">Este desafío aún no está asignado a ningún paciente.</p>
