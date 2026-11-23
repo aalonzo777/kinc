@@ -3,18 +3,25 @@
 {% block page_title %}<i class="bi bi-people-fill me-2"></i>Pacientes{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
-  <form class="d-flex gap-2" method="get">
+
+<!-- Barra superior: búsqueda + botón -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+  <form class="d-flex gap-2 flex-grow-1" method="get" style="min-width:0;">
     <input type="search" name="q" value="{{ q }}" class="form-control rounded-pill"
-           placeholder="Buscar paciente..." style="width:260px;">
-    <button type="submit" class="btn btn-outline-primary rounded-pill"><i class="bi bi-search"></i></button>
+           placeholder="Buscar paciente...">
+    <button type="submit" class="btn btn-outline-primary rounded-pill px-3">
+      <i class="bi bi-search"></i>
+    </button>
   </form>
-  <a href="{% url 'patient_add' %}" class="btn btn-kinc rounded-pill px-4">
-    <i class="bi bi-person-plus-fill me-2"></i>Agregar paciente
+  <a href="{% url 'patient_add' %}" class="btn btn-kinc rounded-pill px-3 d-flex align-items-center gap-2 flex-shrink-0">
+    <i class="bi bi-person-plus-fill"></i>
+    <span class="d-none d-sm-inline">Agregar paciente</span>
+    <span class="d-inline d-sm-none">Agregar</span>
   </a>
 </div>
 
-<div class="kinc-table">
+<!-- VISTA ESCRITORIO: tabla (oculta en móvil) -->
+<div class="kinc-table d-none d-md-block">
   <table class="table table-hover align-middle">
     <thead>
       <tr>
@@ -35,9 +42,7 @@
             <div class="avatar-circle" style="width:34px;height:34px;font-size:.85rem;">
               {{ p.user.first_name.0|upper }}{{ p.user.last_name.0|upper }}
             </div>
-            <div>
-              <div class="fw-600">{{ p.user.get_full_name }}</div>
-            </div>
+            <div class="fw-600">{{ p.user.get_full_name }}</div>
           </div>
         </td>
         <td class="text-muted small">{{ p.user.email }}</td>
@@ -60,9 +65,69 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" class="text-center py-4 text-muted">No se encontraron pacientes.</td></tr>
+      <tr>
+        <td colspan="7" class="text-center py-4 text-muted">No se encontraron pacientes.</td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
+<!-- VISTA MÓVIL: tarjetas (oculta en escritorio) -->
+<div class="d-md-none d-flex flex-column gap-3">
+  {% for p in patients %}
+  <div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body py-3 px-3">
+
+      <!-- Fila superior: avatar + nombre + puntos -->
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <div class="avatar-circle flex-shrink-0" style="width:42px;height:42px;font-size:.9rem;">
+          {{ p.user.first_name.0|upper }}{{ p.user.last_name.0|upper }}
+        </div>
+        <div class="flex-grow-1 min-width-0">
+          <div class="fw-600 text-truncate">{{ p.user.get_full_name }}</div>
+          <div class="text-muted small text-truncate">{{ p.user.email }}</div>
+        </div>
+        <span class="points-badge flex-shrink-0">
+          <i class="bi bi-star-fill"></i>{{ p.points }}
+        </span>
+      </div>
+
+      <!-- Fila de datos secundarios -->
+      <div class="d-flex flex-wrap gap-3 mb-3 small text-muted">
+        {% if p.user.phone %}
+        <span><i class="bi bi-telephone me-1"></i>{{ p.user.phone }}</span>
+        {% endif %}
+        {% if p.user.age %}
+        <span><i class="bi bi-calendar me-1"></i>{{ p.user.age }} años</span>
+        {% endif %}
+        <span><i class="bi bi-clock me-1"></i>{{ p.last_session|date:"d/m/Y"|default:"Sin sesión" }}</span>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="d-flex gap-2">
+        <a href="{% url 'patient_detail' p.pk %}"
+           class="btn btn-sm btn-outline-primary rounded-pill flex-grow-1">
+          <i class="bi bi-eye me-1"></i>Ver
+        </a>
+        <a href="{% url 'patient_edit' p.pk %}"
+           class="btn btn-sm btn-outline-secondary rounded-pill flex-grow-1">
+          <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        <a href="{% url 'patient_delete' p.pk %}"
+           class="btn btn-sm btn-outline-danger rounded-pill px-3">
+          <i class="bi bi-trash"></i>
+        </a>
+      </div>
+
+    </div>
+  </div>
+  {% empty %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-people display-6 d-block mb-2"></i>
+    No se encontraron pacientes.
+  </div>
+  {% endfor %}
+</div>
+
 {% endblock %}
