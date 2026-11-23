@@ -47,6 +47,7 @@ urlpatterns = [
     path('kin/chat/', views.kin_chat_list, name='kin_chat_list'),
     path('kin/chat/<id:patient_pk>/', views.kin_chat, name='kin_chat'),
     path('paciente/chat/', views.patient_chat, name='patient_chat'),
+    path('kin/chat/<id:patient_pk>/poll/', views.chat_poll, name='chat_poll'),
 
     # Desafíos CRUD
     path('kin/desafios/', views.challenge_list, name='challenge_list'),

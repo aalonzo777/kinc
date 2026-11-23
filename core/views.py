@@ -900,6 +900,51 @@ def patient_chat(request):
     msgs = Message.objects.filter(patient=profile)
     return render(request, 'core/chat.html', {'patient': profile, 'msgs': msgs, 'is_kin': False, 'kin': kin})
 
+@login_required
+def chat_poll(request, patient_pk):
+    """
+    Endpoint de polling: devuelve los mensajes nuevos desde 'since' (ID).
+    Usado por el chat para actualizar en tiempo real sin recargar.
+    GET /kin/chat/<patient_pk>/poll/?since=<last_message_id>
+    """
+    # Verificar que el usuario tiene acceso a este chat
+    patient = get_object_or_404(Patient, pk=patient_pk)
+    is_kin = hasattr(request.user, 'kinesiologo_profile') or (
+        hasattr(patient, 'kinesiologo') and patient.kinesiologo == request.user
+    )
+    is_patient = hasattr(request.user, 'patient_profile') and request.user.patient_profile == patient
+
+    if not (is_kin or is_patient):
+        return JsonResponse({'error': 'forbidden'}, status=403)
+
+    since_id = request.GET.get('since', 0)
+    try:
+        since_id = int(since_id)
+    except (ValueError, TypeError):
+        since_id = 0
+
+    new_msgs = Message.objects.filter(
+        patient=patient,
+        id__gt=since_id,
+    ).select_related('sender').order_by('id')
+
+    # Marcar como leídos los mensajes recibidos
+    new_msgs.filter(recipient=request.user, is_read=False).update(is_read=True)
+
+    data = []
+    for m in new_msgs:
+        data.append({
+            'id':        m.id,
+            'body':      m.body,
+            'sender_id': m.sender.id,
+            'sender':    m.sender.get_full_name(),
+            'mine':      m.sender == request.user,
+            'time':      m.created_at.strftime('%d/%m %H:%M'),
+        })
+
+    return JsonResponse({'messages': data})
+
+
 
 # ─────────────────────────────────────────────
 # GRÁFICO DE PROGRESO DE PUNTOS (paciente)

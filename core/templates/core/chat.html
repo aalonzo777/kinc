@@ -29,6 +29,12 @@
   }
   .msg-time { font-size: .7rem; opacity: .65; margin-top: .2rem; }
   .msg-sender { font-size: .72rem; font-weight: 700; margin-bottom: .15rem; opacity: .8; }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg-new { animation: msgIn .2s ease; }
+  #sendBtn:disabled { opacity: .6; }
 </style>
 {% endblock %}
 
@@ -68,19 +74,21 @@
       <div class="chat-container" id="chatBox">
         {% for m in msgs %}
           {% if m.sender == request.user %}
-          <div style="display:flex;flex-direction:column;align-items:flex-end;">
+          <div style="display:flex;flex-direction:column;align-items:flex-end;"
+               data-msg-id="{{ m.id }}">
             <div class="msg-bubble msg-mine">{{ m.body }}</div>
             <div class="msg-time text-end me-1">{{ m.created_at|date:"d/m H:i" }}</div>
           </div>
           {% else %}
-          <div style="display:flex;flex-direction:column;align-items:flex-start;">
+          <div style="display:flex;flex-direction:column;align-items:flex-start;"
+               data-msg-id="{{ m.id }}">
             <div class="msg-sender ms-1">{{ m.sender.get_full_name }}</div>
             <div class="msg-bubble msg-other">{{ m.body }}</div>
             <div class="msg-time ms-1">{{ m.created_at|date:"d/m H:i" }}</div>
           </div>
           {% endif %}
         {% empty %}
-        <div class="text-center text-muted my-auto py-5">
+        <div class="text-center text-muted my-auto py-5" id="emptyMsg">
           <i class="bi bi-chat-square-dots" style="font-size:2.5rem;color:#CBD5E0;"></i>
           <p class="mt-2 small">No hay mensajes aún. ¡Inicia la conversación!</p>
         </div>
@@ -89,17 +97,18 @@
     </div>
 
     <!-- INPUT -->
-    <form method="post" class="kinc-form-card">
-      {% csrf_token %}
+    <div class="kinc-form-card">
       <div class="d-flex gap-2">
-        <input type="text" name="body" maxlength="1000" class="form-control rounded-pill"
-               placeholder="Escribe un mensaje..." required autocomplete="off"
-               id="msgInput">
-        <button type="submit" class="btn btn-kinc rounded-pill px-4">
-          <i class="bi bi-send-fill"></i>
+        <input type="text" id="msgInput" maxlength="1000" class="form-control rounded-pill"
+               placeholder="Escribe un mensaje..." autocomplete="off">
+        <button id="sendBtn" class="btn btn-kinc rounded-pill px-4">
+          <i class="bi bi-send-fill" id="sendIcon"></i>
         </button>
       </div>
-    </form>
+      <div id="errorMsg" class="text-danger small mt-2 d-none">
+        No se pudo enviar el mensaje. Intenta de nuevo.
+      </div>
+    </div>
 
   </div>
 </div>
@@ -107,9 +116,128 @@
 
 {% block extra_js %}
 <script>
-  // Scroll al fondo automáticamente
-  const chatBox = document.getElementById('chatBox');
+  const chatBox   = document.getElementById('chatBox');
+  const msgInput  = document.getElementById('msgInput');
+  const sendBtn   = document.getElementById('sendBtn');
+  const sendIcon  = document.getElementById('sendIcon');
+  const errorMsg  = document.getElementById('errorMsg');
+  const csrfToken = '{{ csrf_token }}';
+  const postUrl   = window.location.href;
+  const pollUrl   = '{% url "chat_poll" patient.pk %}';
+  const myId      = {{ request.user.id }};
+
+  // ── ID del último mensaje cargado al abrir la página ──────────────────────
+  let lastId = 0;
+  document.querySelectorAll('[data-msg-id]').forEach(el => {
+    const id = parseInt(el.dataset.msgId);
+    if (id > lastId) lastId = id;
+  });
+
+  // ── Escape HTML para inserción segura ─────────────────────────────────────
+  function esc(str) {
+    return str
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  // ── Renderizar un mensaje en el chat ──────────────────────────────────────
+  function renderMessage(msg) {
+    const empty = document.getElementById('emptyMsg');
+    if (empty) empty.remove();
+
+    const wrapper = document.createElement('div');
+    wrapper.dataset.msgId = msg.id;
+    wrapper.classList.add('msg-new');
+
+    if (msg.mine) {
+      wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;';
+      wrapper.innerHTML = `
+        <div class="msg-bubble msg-mine">${esc(msg.body)}</div>
+        <div class="msg-time text-end me-1">${esc(msg.time)}</div>
+      `;
+    } else {
+      wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;';
+      wrapper.innerHTML = `
+        <div class="msg-sender ms-1">${esc(msg.sender)}</div>
+        <div class="msg-bubble msg-other">${esc(msg.body)}</div>
+        <div class="msg-time ms-1">${esc(msg.time)}</div>
+      `;
+    }
+
+    chatBox.appendChild(wrapper);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    if (msg.id > lastId) lastId = msg.id;
+  }
+
+  // ── Polling: cada 3 segundos pide mensajes nuevos ─────────────────────────
+  async function poll() {
+    try {
+      const resp = await fetch(`${pollUrl}?since=${lastId}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      data.messages.forEach(renderMessage);
+    } catch (e) {
+      // fallo de red — no hacer nada, el próximo ciclo lo reintenta
+    }
+  }
+
+  // Iniciar polling
+  const pollInterval = setInterval(poll, 3000);
+
+  // Detener polling si el usuario cambia de pestaña (ahorro de recursos)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearInterval(pollInterval);
+    } else {
+      poll(); // polling inmediato al volver
+      setInterval(poll, 3000);
+    }
+  });
+
+  // ── Enviar mensaje ────────────────────────────────────────────────────────
+  async function sendMessage() {
+    const body = msgInput.value.trim();
+    if (!body) return;
+
+    sendBtn.disabled = true;
+    sendIcon.className = 'bi bi-hourglass-split';
+    errorMsg.classList.add('d-none');
+    msgInput.value = '';
+    msgInput.focus();
+
+    try {
+      const resp = await fetch(postUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `body=${encodeURIComponent(body)}`,
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+      // Polling inmediato para obtener el mensaje con su ID real
+      await poll();
+
+    } catch (err) {
+      errorMsg.classList.remove('d-none');
+    } finally {
+      sendBtn.disabled = false;
+      sendIcon.className = 'bi bi-send-fill';
+    }
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  msgInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  // Scroll al fondo y foco inicial
   chatBox.scrollTop = chatBox.scrollHeight;
-  document.getElementById('msgInput').focus();
+  msgInput.focus();
 </script>
 {% endblock %}
