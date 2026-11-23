@@ -131,6 +131,8 @@ if os.environ.get('AWS_STORAGE_BUCKET_NAME'):
         'default': {'BACKEND': 'storages.backends.s3.S3Storage'},
         'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
     }
+
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
     AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL') or None
     AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'auto')
     AWS_S3_SIGNATURE_VERSION = 's3v4'
