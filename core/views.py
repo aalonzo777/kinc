@@ -358,7 +358,7 @@ def challenge_delete(request, pk):
 @kinesiologo_required
 @require_POST
 def challenge_verify(request, pc_pk):
-    """Aprobar o rechazar una entrega específica (una sola vez, sin duplicar puntos)."""
+    """Aprobar o rechazar una entrega. Si se aprueba, marca el desafío como completado."""
     pc = get_object_or_404(
         PatientChallenge.objects.select_related('patient__user', 'challenge'),
         pk=pc_pk, challenge__kinesiologo=request.user,
@@ -368,9 +368,9 @@ def challenge_verify(request, pc_pk):
         messages.error(request, 'Datos inválidos. ' + form_errors_text(form))
         return redirect('patient_challenge_detail', pc_pk=pc.pk)
 
-    action = form.cleaned_data['action']
+    action   = form.cleaned_data['action']
     feedback = form.cleaned_data['feedback']
-    points = pc.challenge.points
+    points   = pc.challenge.points
 
     with transaction.atomic():
         submission = get_object_or_404(
@@ -381,13 +381,17 @@ def challenge_verify(request, pc_pk):
             messages.warning(request, 'Esta entrega ya fue revisada.')
             return redirect('patient_challenge_detail', pc_pk=pc.pk)
 
-        submission.reviewed_at = timezone.now()
+        submission.reviewed_at  = timezone.now()
         submission.kin_feedback = feedback
+
         if action == 'approve':
-            submission.status = 'aprobado'
+            submission.status       = 'aprobado'
             submission.points_awarded = True
             submission.save()
-            # F() hace la suma en la base de datos: no se pierden puntos si hay dos acciones a la vez
+            # Marcar el desafío como completado
+            pc.status = 'completado'
+            pc.save(update_fields=['status'])
+            # Sumar puntos atómicamente
             Patient.objects.filter(pk=pc.patient_id).update(points=F('points') + points)
             PointHistory.objects.create(
                 patient=pc.patient, points=points,
@@ -416,6 +420,39 @@ def challenge_verify(request, pc_pk):
         )
         messages.warning(request, 'Entrega rechazada. El paciente puede volver a intentarlo.')
     return redirect('patient_challenge_detail', pc_pk=pc.pk)
+
+
+@kinesiologo_required
+@require_POST
+def reassign_challenge(request, pc_pk):
+    """
+    Crea una nueva instancia del mismo desafío para el mismo paciente (nuevo intento).
+    Solo disponible si el desafío está completado.
+    """
+    pc = get_object_or_404(
+        PatientChallenge.objects.select_related('patient', 'challenge'),
+        pk=pc_pk, challenge__kinesiologo=request.user,
+    )
+    if pc.status != 'completado':
+        messages.warning(request, 'Solo puedes reasignar desafíos completados.')
+        return redirect('patient_challenge_detail', pc_pk=pc.pk)
+
+    # Calcular el número del próximo intento
+    last_attempt = PatientChallenge.objects.filter(
+        patient=pc.patient, challenge=pc.challenge
+    ).order_by('-attempt').values_list('attempt', flat=True).first() or 0
+
+    new_pc = PatientChallenge.objects.create(
+        patient=pc.patient,
+        challenge=pc.challenge,
+        status='pendiente',
+        attempt=last_attempt + 1,
+    )
+    messages.success(
+        request,
+        f'Desafío "{pc.challenge.name}" reasignado como intento #{new_pc.attempt}.'
+    )
+    return redirect('patient_challenge_detail', pc_pk=new_pc.pk)
 
 
 # ─── RECOMPENSAS CRUD ───
@@ -672,6 +709,10 @@ def patient_challenges(request):
 @paciente_required
 def accept_challenge(request, pc_pk):
     pc = get_object_or_404(PatientChallenge, pk=pc_pk, patient=request.user.patient_profile)
+    # Bloquear si ya está completado
+    if pc.status == 'completado':
+        messages.warning(request, 'Este desafío ya está completado.')
+        return redirect('patient_challenges')
     if pc.status == 'pendiente':
         pc.status = 'activo'
         pc.accepted_at = timezone.now()
@@ -687,6 +728,11 @@ def submit_proof(request, pc_pk):
     pc = get_object_or_404(
         PatientChallenge.objects.select_related('challenge'), pk=pc_pk, patient=profile
     )
+    # Bloquear si está completado
+    if pc.status == 'completado':
+        messages.error(request, 'Este desafío ya está completado y no admite más entregas.')
+        return redirect('patient_challenges')
+
     if pc.status != 'activo':
         messages.error(request, 'Primero debes aceptar el desafío para poder enviar una entrega.')
         return redirect('patient_challenges')
@@ -694,12 +740,13 @@ def submit_proof(request, pc_pk):
     with transaction.atomic():
         if not pc.can_submit_today():
             msgs_map = {
-                'diario': 'Ya enviaste una entrega hoy. Vuelve mañana.',
-                'semanal': 'Ya enviaste una entrega esta semana.',
-                'mensual': 'Ya enviaste una entrega este mes.',
+                'diario':   'Ya enviaste una entrega hoy. Vuelve mañana.',
+                'semanal':  'Ya enviaste una entrega esta semana.',
+                'mensual':  'Ya enviaste una entrega este mes.',
             }
             messages.warning(request, msgs_map.get(pc.challenge.challenge_type, 'Ya enviaste una entrega reciente.'))
             return redirect('patient_challenges')
+
         form = ChallengeSubmissionForm(request.POST, request.FILES)
         if not form.is_valid():
             messages.error(request, 'No se pudo enviar la entrega. ' + form_errors_text(form))

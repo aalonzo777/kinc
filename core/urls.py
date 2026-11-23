@@ -42,6 +42,7 @@ urlpatterns = [
     path('kin/desafio-paciente/<id:pc_pk>/detalle/', views.patient_challenge_detail, name='patient_challenge_detail'),
     path('kin/desafio-paciente/<id:pc_pk>/quitar/', views.patient_challenge_remove, name='patient_challenge_remove'),
     path('kin/desafio-paciente/<id:pc_pk>/editar/', views.patient_challenge_edit, name='patient_challenge_edit'),
+    path('kin/desafio-paciente/<id:pc_pk>/reasignar/', views.reassign_challenge, name='reassign_challenge'),
 
     # Chat
     path('kin/chat/', views.kin_chat_list, name='kin_chat_list'),

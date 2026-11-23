@@ -132,16 +132,27 @@ class Challenge(models.Model):
 class PatientChallenge(models.Model):
     STATUS_CHOICES = (
         ('pendiente', 'Pendiente'),
-        ('activo', 'Activo'),
+        ('activo',    'Activo'),
+        ('completado','Completado'),  # ← NUEVO: desafío finalizado, no se puede editar
     )
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='challenges')
-    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name='patient_challenges')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendiente')
-    assigned_at = models.DateTimeField(auto_now_add=True)
-    accepted_at = models.DateTimeField(blank=True, null=True)
+    patient    = models.ForeignKey(Patient,   on_delete=models.CASCADE, related_name='challenges')
+    challenge  = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name='patient_challenges')
+    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendiente')
+    attempt    = models.PositiveIntegerField(default=1)          # ← NUEVO: nº de intento
+    assigned_at  = models.DateTimeField(auto_now_add=True)
+    accepted_at  = models.DateTimeField(blank=True, null=True)
+
+    # ── SIN unique_together: permite múltiples intentos del mismo desafío ──
 
     class Meta:
-        unique_together = ('patient', 'challenge')
+        ordering = ['-assigned_at']
+
+    @property
+    def display_name(self):
+        """Nombre con diferenciador si hay más de un intento."""
+        if self.attempt > 1:
+            return f"{self.challenge.name} (intento #{self.attempt})"
+        return self.challenge.name
 
     def total_approved(self):
         return self.submissions.filter(status='aprobado').count()
@@ -155,8 +166,15 @@ class PatientChallenge(models.Model):
     def last_submission(self):
         return self.submissions.first()
 
+    def is_completed(self):
+        """True si el desafío tiene al menos una entrega aprobada."""
+        return self.submissions.filter(status='aprobado').exists()
+
     def can_submit_today(self):
         """Verifica si puede subir una nueva entrega según el tipo de desafío."""
+        # Bloquear si está completado
+        if self.status == 'completado':
+            return False
         last = self.submissions.filter(status__in=['pendiente', 'aprobado']).first()
         if not last:
             return True
@@ -171,7 +189,7 @@ class PatientChallenge(models.Model):
         return True
 
     def __str__(self):
-        return f"{self.patient} - {self.challenge.name} [{self.get_status_display()}]"
+        return f"{self.patient} - {self.display_name} [{self.get_status_display()}]"
 
 
 class ChallengeSubmission(models.Model):
