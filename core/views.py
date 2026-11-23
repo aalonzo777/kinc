@@ -869,8 +869,12 @@ def kin_chat(request, patient_pk):
                 patient=patient,
                 body=form.cleaned_data['body'],
             )
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  # ← NUEVO
+                return JsonResponse({'ok': True})                             # ← NUEVO
         else:
             messages.error(request, 'Mensaje no válido. ' + form_errors_text(form))
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  # ← NUEVO
+                return JsonResponse({'ok': False}, status=400)                # ← NUEVO
         return redirect('kin_chat', patient_pk=patient_pk)
     Message.objects.filter(patient=patient, recipient=request.user, is_read=False).update(is_read=True)
     msgs = Message.objects.filter(patient=patient)
@@ -893,8 +897,12 @@ def patient_chat(request):
                 patient=profile,
                 body=form.cleaned_data['body'],
             )
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  
+                return JsonResponse({'ok': True})                             
         else:
             messages.error(request, 'Mensaje no válido. ' + form_errors_text(form))
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  
+                return JsonResponse({'ok': False}, status=400)                
         return redirect('patient_chat')
     Message.objects.filter(patient=profile, recipient=request.user, is_read=False).update(is_read=True)
     msgs = Message.objects.filter(patient=profile)
