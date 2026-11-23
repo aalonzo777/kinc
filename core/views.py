@@ -355,70 +355,154 @@ def challenge_delete(request, pk):
     return render(request, 'core/challenges/confirm_delete.html', {'challenge': challenge})
 
 
+
 @kinesiologo_required
 @require_POST
 def challenge_verify(request, pc_pk):
-    """Aprobar o rechazar una entrega. Si se aprueba, marca el desafío como completado."""
+    """Aprueba o rechaza entregas. Los puntos se entregan al completar la duración."""
+
     pc = get_object_or_404(
-        PatientChallenge.objects.select_related('patient__user', 'challenge'),
-        pk=pc_pk, challenge__kinesiologo=request.user,
+        PatientChallenge.objects.select_related(
+            'patient__user', 'challenge'
+        ),
+        pk=pc_pk,
+        challenge__kinesiologo=request.user,
     )
+
     form = VerifyForm(request.POST)
     if not form.is_valid():
         messages.error(request, 'Datos inválidos. ' + form_errors_text(form))
         return redirect('patient_challenge_detail', pc_pk=pc.pk)
 
-    action   = form.cleaned_data['action']
+    action = form.cleaned_data['action']
     feedback = form.cleaned_data['feedback']
-    points   = pc.challenge.points
+
+    completed = False
+    awarded_points = 0
+    approved_count = 0
+    required_count = pc.challenge.duration
 
     with transaction.atomic():
+
+        # Bloquear el desafío para evitar recompensas duplicadas.
+        pc = PatientChallenge.objects.select_for_update().select_related(
+            'patient__user', 'challenge'
+        ).get(
+            pk=pc_pk,
+            challenge__kinesiologo=request.user,
+        )
+
+        if pc.status == 'completado':
+            messages.warning(request, 'Este desafío ya está completado.')
+            return redirect('patient_challenge_detail', pc_pk=pc.pk)
+
         submission = get_object_or_404(
             ChallengeSubmission.objects.select_for_update(),
-            pk=form.cleaned_data['submission_pk'], patient_challenge=pc,
+            pk=form.cleaned_data['submission_pk'],
+            patient_challenge=pc,
         )
+
         if submission.status != 'pendiente':
             messages.warning(request, 'Esta entrega ya fue revisada.')
             return redirect('patient_challenge_detail', pc_pk=pc.pk)
 
-        submission.reviewed_at  = timezone.now()
+        submission.reviewed_at = timezone.now()
         submission.kin_feedback = feedback
 
         if action == 'approve':
-            submission.status       = 'aprobado'
-            submission.points_awarded = True
+
+            # Aprobar la fotografía, pero todavía NO entregar puntos.
+            submission.status = 'aprobado'
+            submission.points_awarded = False
             submission.save()
-            # Marcar el desafío como completado
-            pc.status = 'completado'
-            pc.save(update_fields=['status'])
-            # Sumar puntos atómicamente
-            Patient.objects.filter(pk=pc.patient_id).update(points=F('points') + points)
-            PointHistory.objects.create(
-                patient=pc.patient, points=points,
-                reason=f"Entrega aprobada: {pc.challenge.name}"[:200],
-            )
+
+            # Contar todas las entregas aprobadas del desafío.
+            approved_count = pc.submissions.filter(
+                status='aprobado'
+            ).count()
+
+            # Comprobar si completó todos los períodos.
+            if approved_count >= required_count:
+
+                pc.status = 'completado'
+                pc.save(update_fields=['status'])
+
+                # Entregar los puntos una sola vez.
+                awarded_points = pc.challenge.points
+
+                Patient.objects.filter(
+                    pk=pc.patient_id
+                ).update(
+                    points=F('points') + awarded_points
+                )
+
+                PointHistory.objects.create(
+                    patient=pc.patient,
+                    points=awarded_points,
+                    reason=f"Desafío completado: {pc.challenge.name}"[:200],
+                )
+
+                completed = True
+
         else:
             submission.status = 'rechazado'
             submission.save()
+
             PointHistory.objects.create(
-                patient=pc.patient, points=0,
+                patient=pc.patient,
+                points=0,
                 reason=f"Entrega rechazada: {pc.challenge.name}"[:200],
             )
 
+    # Notificaciones después de guardar los cambios.
     if action == 'approve':
-        create_notification(
-            pc.patient.user, 'desafio_completado', '¡Entrega aprobada!',
-            f'Tu entrega del desafío "{pc.challenge.name}" fue aprobada. Ganaste {points} puntos.',
-            link='/paciente/desafios/'
-        )
-        messages.success(request, f'Entrega aprobada. +{points} pts al paciente.')
+
+        if completed:
+            create_notification(
+                pc.patient.user,
+                'desafio_completado',
+                '¡Desafío completado!',
+                f'¡Terminaste el desafío "{pc.challenge.name}"! '
+                f'Ganaste {awarded_points} puntos.',
+                link='/paciente/desafios/'
+            )
+
+            messages.success(
+                request,
+                f'¡Desafío completado! Se entregaron {awarded_points} puntos.'
+            )
+
+        else:
+            create_notification(
+                pc.patient.user,
+                'desafio_completado',
+                'Entrega aprobada',
+                f'Tu entrega fue aprobada. '
+                f'Progreso: {approved_count}/{required_count} entregas aprobadas.',
+                link='/paciente/desafios/'
+            )
+
+            messages.success(
+                request,
+                f'Entrega aprobada. Progreso: {approved_count}/{required_count}. '
+                'Todavía no se entregan puntos.'
+            )
+
     else:
         create_notification(
-            pc.patient.user, 'desafio_completado', 'Entrega rechazada',
-            f'Tu entrega del desafío "{pc.challenge.name}" fue rechazada. Intenta nuevamente.',
+            pc.patient.user,
+            'desafio_completado',
+            'Entrega rechazada',
+            f'Tu entrega del desafío "{pc.challenge.name}" fue rechazada. '
+            'Intenta nuevamente.',
             link='/paciente/desafios/'
         )
-        messages.warning(request, 'Entrega rechazada. El paciente puede volver a intentarlo.')
+
+        messages.warning(
+            request,
+            'Entrega rechazada. El paciente puede volver a intentarlo.'
+        )
+
     return redirect('patient_challenge_detail', pc_pk=pc.pk)
 
 
